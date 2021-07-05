@@ -1,0 +1,9 @@
+# idea
+/.idea/
+
+# python
+/venv/
+
+# data
+/Download/
+/data.json
