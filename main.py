@@ -20,9 +20,8 @@ class Day:
     PAGES_FILE_PATH = os.path.join(DIR, f'{DATE}.zip')
     MERGED_FILE_PATH = os.path.join(DIR, f'{DATE}.pdf')
 
-    PAGE_COUNT = requests.get(
-        f'http://paper.people.com.cn/rmrb/html/{YEAR}-{MONTH}/{DAY}/nbs.D110000renmrb_01.htm'
-    ).text.count('pageLink')
+    HOME_URL = f'http://paper.people.com.cn/rmrb/html/{YEAR}-{MONTH}/{DAY}/nbs.D110000renmrb_01.htm'
+    PAGE_COUNT = requests.get(HOME_URL).text.count('pageLink')
 
     if not os.path.isdir(DIR):
         os.makedirs(DIR)
@@ -31,9 +30,8 @@ class Day:
 class Page:
     def __init__(self, page: str):
         self.page = page
-        self.html = requests.get(
-            f'http://paper.people.com.cn/rmrb/html/{Day.YEAR}-{Day.MONTH}/{Day.DAY}/nbs.D110000renmrb_{self.page}.htm'
-        ).text
+        self.html_url = f'http://paper.people.com.cn/rmrb/html/{Day.YEAR}-{Day.MONTH}/{Day.DAY}/nbs.D110000renmrb_{self.page}.htm'
+        self.html = requests.get(self.html_url).text
         self.pdf = requests.get(
             (
                 'http://paper.people.com.cn/rmrb/images/{0}-{1}/{2}/{3}/rmrb{0}{1}{2}{3}.pdf'
@@ -58,8 +56,14 @@ class Page:
     @property
     def articles(self):
         return [
-            i.strip() for i in
-            re.findall('<a href=nw.*?>(?P<name>.*?)</a>', self.html)
+            (
+                (
+                    'http://paper.people.com.cn/rmrb/html/{}-{}/{}/{}'
+                        .format(Day.YEAR, Day.MONTH, Day.DAY, i[0])
+                ),
+                i[1].strip()
+            ) for i in
+            re.findall('<a href=(nw.*?)>(.*?)</a>', self.html)
         ]
 
     def save_pdf(self):
@@ -77,7 +81,10 @@ def main():
         'page_count': str(Day.PAGE_COUNT),
         'pages_file_path': Day.PAGES_FILE_PATH,
         'merged_file_path': Day.MERGED_FILE_PATH,
-        'release_body': f'# {Day.DATE}\n\n今日 {Day.PAGE_COUNT} 版'
+        'release_body': (
+            f'# [{Day.DATE}]({Day.HOME_URL})'
+            f'\n\n今日 {Day.PAGE_COUNT} 版'
+        )
     }
 
     # Process
@@ -92,9 +99,9 @@ def main():
         merged_file.append(page.path)
 
         # Data
-        data['release_body'] += f'\n\n## {page.title}\n'
+        data['release_body'] += f'\n\n## [{page.title}]({page.html_url})\n'
         for article in page.articles:
-            data['release_body'] += f'\n- {article}'
+            data['release_body'] += f'\n- [{article[1]}]({article[0]})'
 
         # Info
         print(f'Processed {page}')
