@@ -1,8 +1,8 @@
 import os
 import re
-import time
 import json
 import zipfile
+import datetime
 import warnings
 
 import requests
@@ -10,10 +10,10 @@ from PyPDF2 import PdfFileMerger
 
 
 class Day:
-    LOCALTIME = time.localtime()
-    YEAR = str(LOCALTIME.tm_year).zfill(4)
-    MONTH = str(LOCALTIME.tm_mon).zfill(2)
-    DAY = str(LOCALTIME.tm_mday).zfill(2)
+    NOW = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+    YEAR = str(NOW.year).zfill(4)
+    MONTH = str(NOW.month).zfill(2)
+    DAY = str(NOW.day).zfill(2)
     DATE = ''.join([YEAR, MONTH, DAY])
 
     DIR = os.path.join('Download', DATE)
