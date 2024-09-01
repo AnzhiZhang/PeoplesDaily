@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.0.1...v1.0.2) (2024-09-01)
+
+
+### Bug Fixes
+
+* 🔊 log when email disabled ([67db9a1](https://github.com/AnzhiZhang/PeoplesDaily/commit/67db9a1fd0c7c7dd058f7fc8bfcaacc54d64cdbf))
+
 ## [1.0.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.0.0...v1.0.1) (2024-09-01)
 
 
