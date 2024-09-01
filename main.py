@@ -19,7 +19,7 @@ ARTICLE_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/{}'
 
 class Today:
     def __init__(self):
-        self.now = datetime.datetime.now(datetime.UTC) + TIME_DELTA
+        self.now = datetime.datetime.now(datetime.UTC)
         self.year = str(self.now.year).zfill(4)
         self.month = str(self.now.month).zfill(2)
         self.day = str(self.now.day).zfill(2)
