@@ -49,7 +49,7 @@ def main():
     scheduler.add_job(
         get_today_peoples_daily,
         'cron',
-        hour='0',
+        hour='22',
         minute='0',
         args=(email_config,)
     )
