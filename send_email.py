@@ -15,6 +15,7 @@ from email.utils import parseaddr, formataddr
 from main import TodayPeopleDaily
 
 __all__ = [
+    'EmailConfig',
     'send_email',
 ]
 
