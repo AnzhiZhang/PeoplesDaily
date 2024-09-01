@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.0.0...v1.0.1) (2024-09-01)
+
+
+### Bug Fixes
+
+* 🐛 fix imports ([ba4a5ea](https://github.com/AnzhiZhang/PeoplesDaily/commit/ba4a5ea018a82e1913844c5f7a07ffc3a74c962f))
+
 ## 1.0.0 (2024-09-01)
 
 
