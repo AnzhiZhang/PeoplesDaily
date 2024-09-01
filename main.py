@@ -17,7 +17,6 @@ ARTICLE_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/{}'
 class Today:
     def __init__(self):
         self.now = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
-        print(self.now)
         self.year = str(self.now.year).zfill(4)
         self.month = str(self.now.month).zfill(2)
         self.day = str(self.now.day).zfill(2)
