@@ -10,6 +10,7 @@ import requests
 from pypdf import PdfWriter
 
 DATA_DIR = 'data'
+TIME_DELTA = datetime.timedelta(hours=8)
 HOME_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/nbs.D110000renmrb_01.htm'
 PAGE_HTML_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/nbs.D110000renmrb_{}.htm'
 PAGE_PDF_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/images/{0}-{1}/{2}/{3}/rmrb{0}{1}{2}{3}.pdf'
@@ -18,7 +19,7 @@ ARTICLE_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/{}'
 
 class Today:
     def __init__(self):
-        self.now = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+        self.now = datetime.datetime.now(datetime.UTC) + TIME_DELTA
         self.year = str(self.now.year).zfill(4)
         self.month = str(self.now.month).zfill(2)
         self.day = str(self.now.day).zfill(2)
