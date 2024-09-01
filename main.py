@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import uuid
 import zipfile
 import argparse
 import datetime
@@ -150,6 +151,13 @@ def get_today_peoples_daily():
     return data
 
 
+def write_multiline_output(fh, name, value):
+    delimiter = uuid.uuid4()
+    print(f'{name}<<{delimiter}', file=fh)
+    print(value, file=fh)
+    print(delimiter, file=fh)
+
+
 def main():
     # setup parser
     parser = argparse.ArgumentParser(
@@ -173,7 +181,10 @@ def main():
     if write_github_output:
         with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
             for name, value in data.items():
-                print(f'{name}={value}', file=fh)
+                if '\n' in value:
+                    write_multiline_output(fh, name, value)
+                else:
+                    print(f'{name}={value}', file=fh)
 
 
 if __name__ == '__main__':
