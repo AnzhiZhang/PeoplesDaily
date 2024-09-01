@@ -28,6 +28,10 @@ def main():
     smtp_ssl = os.environ.get('SMTP_SSL', 'False').lower() == 'true'
     recipients = os.environ.get('RECIPIENTS', '').split(",")
     recipients = [r.strip() for r in recipients if r.strip() != '']
+    with_attachment = os.environ.get(
+        'WITH_ATTACHMENT',
+        'False'
+    ).lower() == 'true'
     email_config = EmailConfig(
         os.environ.get('SMTP_SERVER', ''),
         smtp_port,
@@ -35,7 +39,8 @@ def main():
         os.environ.get('SMTP_USER', ''),
         os.environ.get('SMTP_PASSWORD', ''),
         os.environ.get('SENDER', ''),
-        recipients
+        recipients,
+        with_attachment,
     )
 
     # log email config
