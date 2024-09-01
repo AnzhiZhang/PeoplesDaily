@@ -167,7 +167,7 @@ def main():
     parser.add_argument(
         "--write-github-output",
         action=argparse.BooleanOptionalAction,
-        dest="write_github_output",
+        default=False,
         help="Write GitHub output",
     )
 
