@@ -5,5 +5,4 @@
 /venv/
 
 # data
-/Download/
-/data.json
+/data/
