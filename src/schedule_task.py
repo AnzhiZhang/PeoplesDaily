@@ -41,6 +41,8 @@ def main():
     # log email config
     if email_config.enabled:
         print(f"Email enabled with recipients: {email_config.recipients}")
+    else:
+        print("Email disabled")
 
     # build scheduler
     scheduler = BlockingScheduler(timezone=datetime.UTC)
