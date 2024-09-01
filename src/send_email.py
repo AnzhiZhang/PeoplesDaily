@@ -31,7 +31,8 @@ class EmailConfig:
             smtp_user: str,
             smtp_password: str,
             sender: str,
-            recipients: list[str]
+            recipients: list[str],
+            with_attachment: bool = False
     ):
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
@@ -40,6 +41,7 @@ class EmailConfig:
         self.smtp_password = smtp_password
         self.sender = sender
         self.recipients = recipients
+        self.with_attachment = with_attachment
 
     @property
     def enabled(self):
@@ -77,6 +79,8 @@ def send_email(
         ),
         'utf-8'
     ).encode()
+
+    # add table of contents
     msg.attach(MIMEText(
         markdown2.markdown(today_peoples_daily.release_body),
         'html',
@@ -84,23 +88,24 @@ def send_email(
     ))
 
     # attach pdf
-    pdf_name = os.path.basename(today_peoples_daily.merged_file_path)
-    with open(today_peoples_daily.merged_file_path, 'rb') as f:
-        mime = MIMEBase(
-            'application',
-            'pdf',
-            filename=pdf_name
-        )
-        mime.add_header(
-            'Content-Disposition',
-            'attachment',
-            filename=pdf_name
-        )
-        mime.add_header('Content-ID', '<0>')
-        mime.add_header('X-Attachment-Id', '0')
-        mime.set_payload(f.read())
-        encoders.encode_base64(mime)
-        msg.attach(mime)
+    if config.with_attachment:
+        pdf_name = os.path.basename(today_peoples_daily.merged_file_path)
+        with open(today_peoples_daily.merged_file_path, 'rb') as f:
+            mime = MIMEBase(
+                'application',
+                'pdf',
+                filename=pdf_name
+            )
+            mime.add_header(
+                'Content-Disposition',
+                'attachment',
+                filename=pdf_name
+            )
+            mime.add_header('Content-ID', '<0>')
+            mime.add_header('X-Attachment-Id', '0')
+            mime.set_payload(f.read())
+            encoders.encode_base64(mime)
+            msg.attach(mime)
 
     # send email
     for recipient in config.recipients:
@@ -147,6 +152,12 @@ def main():
         help="Recipients",
         nargs='+',
     )
+    parser.add_argument(
+        "--with-attachment",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="With attachment",
+    )
 
     # parse arguments
     args = parser.parse_args()
@@ -157,6 +168,7 @@ def main():
     smtp_password = args.smtp_password
     sender = args.sender
     recipients = args.recipients
+    with_attachment = args.with_attachment
 
     # get today peoples daily
     today_peoples_daily = TodayPeopleDaily()
@@ -171,7 +183,8 @@ def main():
             smtp_user,
             smtp_password,
             sender,
-            recipients
+            recipients,
+            with_attachment
         ),
         today_peoples_daily
     )
