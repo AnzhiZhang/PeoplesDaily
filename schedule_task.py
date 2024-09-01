@@ -14,7 +14,7 @@ def get_today_peoples_daily(email_config: EmailConfig):
     print(f"Got People's Daily for {today_peoples_daily.date}")
 
     # send email
-    if len(email_config.recipients) != 0:
+    if email_config.enabled:
         send_email(
             email_config,
             today_peoples_daily

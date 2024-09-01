@@ -41,6 +41,10 @@ class EmailConfig:
         self.sender = sender
         self.recipients = recipients
 
+    @property
+    def enabled(self):
+        return len(self.recipients) != 0
+
 
 def format_addr(s):
     name, addr = parseaddr(s)
