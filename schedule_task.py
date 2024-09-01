@@ -23,12 +23,12 @@ def get_today_peoples_daily(email_config: EmailConfig):
 
 
 def main():
-    # mail config
+    # email config
     smtp_port = int(os.environ.get('SMTP_PORT', 0))
     smtp_ssl = os.environ.get('SMTP_SSL', 'False').lower() == 'true'
     recipients = os.environ.get('RECIPIENTS', '').split(",")
     recipients = [r.strip() for r in recipients if r.strip() != '']
-    mail_config = EmailConfig(
+    email_config = EmailConfig(
         os.environ.get('SMTP_SERVER', ''),
         smtp_port,
         smtp_ssl,
@@ -38,6 +38,10 @@ def main():
         recipients
     )
 
+    # log email config
+    if email_config.enabled:
+        print(f"Email enabled with recipients: {email_config.recipients}")
+
     # build scheduler
     scheduler = BlockingScheduler(timezone=datetime.UTC)
     scheduler.add_job(
@@ -45,7 +49,7 @@ def main():
         'cron',
         hour='0',
         minute='0',
-        args=(mail_config,)
+        args=(email_config,)
     )
 
     # start scheduler
