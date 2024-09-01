@@ -1,93 +1,69 @@
-name: Run
+name: Get Peoples Daily
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 23 * * *'
+#  schedule:
+#    - cron: '0 0 * * *'
 jobs:
   run:
     runs-on: ubuntu-latest
-    name: Run
+    name: Get Peoples Daily
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Setup Python 3.8
+      - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: 3.12
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run
+      - name: Run Script
         run: python main.py
 
-      - name: Read Date Data
-        id: read_date_data
-        uses: ashley-taylor/read-json-property-action@v1.0
+      - name: Read Date
+        id: read_date
+        uses: ashley-taylor/read-json-property-action@v1
         with:
           path: data.json
           property: date
 
-      - name: Read Page Count Data
-        id: read_page_count_data
-        uses: ashley-taylor/read-json-property-action@v1.0
+      - name: Read Page Count
+        id: read_page_count
+        uses: ashley-taylor/read-json-property-action@v1
         with:
           path: data.json
           property: page_count
 
-      - name: Read Pages File Path Data
-        id: read_pages_file_path_data
-        uses: ashley-taylor/read-json-property-action@v1.0
+      - name: Read Pages Zip Path
+        id: read_pages_zip_path
+        uses: ashley-taylor/read-json-property-action@v1
         with:
           path: data.json
-          property: pages_file_path
+          property: pages_zip_path
 
-      - name: Read Merged File Path Data
-        id: read_merged_file_path_data
-        uses: ashley-taylor/read-json-property-action@v1.0
+      - name: Read Merged PDF Path
+        id: read_merged_pdf_path
+        uses: ashley-taylor/read-json-property-action@v1
         with:
           path: data.json
-          property: merged_file_path
+          property: merged_pdf_path
 
-      - name: Read Release Body Data
-        id: read_release_body_data
-        uses: ashley-taylor/read-json-property-action@v1.0
+      - name: Read Release Body
+        id: read_release_body
+        uses: ashley-taylor/read-json-property-action@v1
         with:
           path: data.json
           property: release_body
 
-      - name: Creat Release
-        id: create_release
-        uses: actions/create-release@latest
+      - name: Create Release and Upload
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.read_date_data.outputs.value }}
-          release_name: ${{ steps.read_date_data.outputs.value }}
-          body: ${{ steps.read_release_body_data.outputs.value }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset Pages File
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.read_pages_file_path_data.outputs.value }}
-          asset_name: ${{ steps.read_date_data.outputs.value }}.zip
-          asset_content_type: application/pdf
-
-      - name: Upload Release Asset Merged File
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.read_merged_file_path_data.outputs.value }}
-          asset_name: ${{ steps.read_date_data.outputs.value }}.pdf
-          asset_content_type: application/pdf
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create ${{ steps.read_date.outputs.value }} --title ${{ steps.read_date.outputs.value }} --notes ${{ steps.read_release_body.outputs.value }}
+          gh release upload ${{ steps.read_date.outputs.value }} ${{ steps.read_pages_zip_path.outputs.value }}
+          gh release upload ${{ steps.read_date.outputs.value }} ${{ steps.read_merged_pdf_path.outputs.value }}
