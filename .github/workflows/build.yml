@@ -17,10 +17,9 @@ jobs:
     steps:
       - name: Release Please
         uses: googleapis/release-please-action@v4
-        id: release_please
         with:
-          release-type: simple
-          pull-request-title-pattern: 'chore${scope}: 🔖 release${component} ${version}'
+          config-file: .release-please/release-please-config.json
+          manifest-file: .release-please/.release-please-manifest.json
 
   build:
     runs-on: ubuntu-latest
