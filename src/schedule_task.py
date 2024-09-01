@@ -3,8 +3,8 @@ import datetime
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 
-from .peoples_daily import TodayPeopleDaily
-from .send_email import EmailConfig, send_email
+from peoples_daily import TodayPeopleDaily
+from send_email import EmailConfig, send_email
 
 
 def get_today_peoples_daily(email_config: EmailConfig):
