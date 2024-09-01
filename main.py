@@ -2,6 +2,7 @@ import os
 import re
 import json
 import zipfile
+import argparse
 import datetime
 
 import requests
@@ -145,9 +146,34 @@ def get_today_peoples_daily():
     for page in pages:
         os.remove(page.path)
 
+    # return data
+    return data
+
 
 def main():
-    get_today_peoples_daily()
+    # setup parser
+    parser = argparse.ArgumentParser(
+        description="Get today people's daily",
+    )
+    parser.add_argument(
+        "--write-github-output",
+        action=argparse.BooleanOptionalAction,
+        dest="write_github_output",
+        help="Write GitHub output",
+    )
+
+    # parse arguments
+    args = parser.parse_args()
+    write_github_output = args.write_github_output
+
+    # get today peoples daily
+    data = get_today_peoples_daily()
+
+    # set output
+    if write_github_output:
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+            for name, value in data.items():
+                print(f'{name}={value}', file=fh)
 
 
 if __name__ == '__main__':
