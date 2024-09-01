@@ -109,7 +109,7 @@ def send_email(
 def main():
     # setup parser
     parser = argparse.ArgumentParser(
-        description="Scheduled mail People's Daily",
+        description="Send People's Daily by email",
     )
     parser.add_argument(
         "--smtp-server",
