@@ -30,6 +30,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create ${{ steps.run_script.outputs.date }} --title ${{ steps.run_script.outputs.date }} --notes ${{ steps.run_script.outputs.release_body }}
+          gh release create ${{ steps.run_script.outputs.date }} --title ${{ steps.run_script.outputs.date }} --notes "${{ steps.run_script.outputs.release_body }}"
           gh release upload ${{ steps.run_script.outputs.date }} ${{ steps.run_script.outputs.pages_zip_path }}
           gh release upload ${{ steps.run_script.outputs.date }} ${{ steps.run_script.outputs.merged_pdf_path }}
