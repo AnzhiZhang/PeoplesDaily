@@ -3,51 +3,69 @@ import re
 import json
 import zipfile
 import datetime
-import warnings
 
 import requests
-from PyPDF2 import PdfFileMerger
+from pypdf import PdfWriter
+
+DATA_DIR = 'data'
+HOME_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/nbs.D110000renmrb_01.htm'
+PAGE_HTML_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/nbs.D110000renmrb_{}.htm'
+PAGE_PDF_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/images/{0}-{1}/{2}/{3}/rmrb{0}{1}{2}{3}.pdf'
+ARTICLE_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/{}'
 
 
-class Day:
-    NOW = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
-    YEAR = str(NOW.year).zfill(4)
-    MONTH = str(NOW.month).zfill(2)
-    DAY = str(NOW.day).zfill(2)
-    DATE = ''.join([YEAR, MONTH, DAY])
+class Today:
+    def __init__(self):
+        self.now = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+        print(self.now)
+        self.year = str(self.now.year).zfill(4)
+        self.month = str(self.now.month).zfill(2)
+        self.day = str(self.now.day).zfill(2)
+        self.date = '-'.join([self.year, self.month, self.day])
 
-    DIR = os.path.join('Download', DATE)
-    PAGES_FILE_PATH = os.path.join(DIR, f'{DATE}.zip')
-    MERGED_FILE_PATH = os.path.join(DIR, f'{DATE}.pdf')
+        self.dir_path = os.path.join(DATA_DIR, self.date)
+        self.pages_file_path = os.path.join(self.dir_path, f'{self.date}.zip')
+        self.merged_file_path = os.path.join(self.dir_path, f'{self.date}.pdf')
 
-    HOME_URL = f'http://paper.people.com.cn/rmrb/html/{YEAR}-{MONTH}/{DAY}/nbs.D110000renmrb_01.htm'
-    PAGE_COUNT = requests.get(HOME_URL).text.count('pageLink')
+        self.home_url = HOME_URL_TEMPLATE.format(
+            self.year,
+            self.month,
+            self.day
+        )
+        self.page_count = requests.get(self.home_url).text.count('pageLink')
 
-    if not os.path.isdir(DIR):
-        os.makedirs(DIR)
+        if not os.path.isdir(self.dir_path):
+            os.makedirs(self.dir_path)
 
 
 class Page:
-    def __init__(self, page: str):
+    def __init__(self, today: Today, page: str):
+        self.today = today
         self.page = page
-        self.html_url = f'http://paper.people.com.cn/rmrb/html/{Day.YEAR}-{Day.MONTH}/{Day.DAY}/nbs.D110000renmrb_{self.page}.htm'
-        self.html = requests.get(self.html_url).text
-        self.pdf = requests.get(
-            (
-                'http://paper.people.com.cn/rmrb/images/{0}-{1}/{2}/{3}/rmrb{0}{1}{2}{3}.pdf'
-                    .format(Day.YEAR, Day.MONTH, Day.DAY, page)
-            )
-        ).content
-        self.path = os.path.join(Day.DIR, f'{self.page}.pdf')
 
-    def __str__(self) -> str:
-        return (
-            f'{self.__class__.__name__}'
-            f'[date={Day.DATE}, page={self.page}, title={self.title}]'
+        self.path = None
+        self.html_url = None
+        self.html = None
+        self.pdf = None
+
+        self.get_page()
+
+    def get_page(self):
+        self.path = os.path.join(self.today.dir_path, f'{self.page}.pdf')
+        self.html_url = PAGE_HTML_URL_TEMPLATE.format(
+            self.today.year,
+            self.today.month,
+            self.today.day,
+            self.page
         )
-
-    def __repr__(self) -> str:
-        return self.__str__()
+        self.html = requests.get(self.html_url).content.decode('utf-8')
+        pdf_url = PAGE_PDF_URL_TEMPLATE.format(
+            self.today.year,
+            self.today.month,
+            self.today.day,
+            self.page
+        )
+        self.pdf = requests.get(pdf_url).content
 
     @property
     def title(self):
@@ -57,11 +75,13 @@ class Page:
     def articles(self):
         return [
             (
-                (
-                    'http://paper.people.com.cn/rmrb/html/{}-{}/{}/{}'
-                        .format(Day.YEAR, Day.MONTH, Day.DAY, i[0])
-                ),
-                i[1].strip()
+                i[1].strip(),
+                ARTICLE_URL_TEMPLATE.format(
+                    self.today.year,
+                    self.today.month,
+                    self.today.day,
+                    i[0]
+                )
             ) for i in
             re.findall('<a href=(nw.*?)>(.*?)</a>', self.html)
         ]
@@ -71,47 +91,64 @@ class Page:
             f.write(self.pdf)
 
 
-def main():
-    warnings.filterwarnings('ignore')
-    pages = [Page(str(i + 1).zfill(2)) for i in range(Day.PAGE_COUNT)]
-    pages_file = zipfile.ZipFile(Day.PAGES_FILE_PATH, 'w')
-    merged_file = PdfFileMerger(False)
+def get_today_peoples_daily():
+    # get today
+    today = Today()
+
+    # download pages
+    pages = []
+    for i in range(today.page_count):
+        page_number = str(i + 1).zfill(2)
+        pages.append(Page(today, page_number))
+
+    # save file and data
+    pages_zip = zipfile.ZipFile(today.pages_file_path, 'w')
+    merged_pdf = PdfWriter()
     data = {
-        'date': Day.DATE,
-        'page_count': str(Day.PAGE_COUNT),
-        'pages_file_path': Day.PAGES_FILE_PATH,
-        'merged_file_path': Day.MERGED_FILE_PATH,
+        'date': today.date,
+        'page_count': str(today.page_count),
+        'pages_zip_path': today.pages_file_path,
+        'merged_pdf_path': today.merged_file_path,
         'release_body': (
-            f'# [{Day.DATE}]({Day.HOME_URL})'
-            f'\n\n今日 {Day.PAGE_COUNT} 版'
+            f'# [{today.date}]({today.home_url})'
+            f'\n\n今日 {today.page_count} 版'
         )
     }
 
-    # Process
+    # add pages
     for page in pages:
-        # Save pdf
+        # save pdf
         page.save_pdf()
 
-        # Pages file
-        pages_file.write(page.path, os.path.basename(page.path))
+        # pages zip
+        pages_zip.write(page.path, os.path.basename(page.path))
 
-        # Merged file
-        merged_file.append(page.path)
+        # merged file
+        merged_pdf.append(page.path)
 
-        # Data
+        # data
         data['release_body'] += f'\n\n## [{page.title}]({page.html_url})\n'
-        for article in page.articles:
-            data['release_body'] += f'\n- [{article[1]}]({article[0]})'
+        for title, url in page.articles:
+            data['release_body'] += f'\n- [{title}]({url})'
 
-        # Info
-        print(f'Processed {page}')
+        # log
+        print(f'added {page.title}')
 
-    # Save
-    pages_file.close()
-    merged_file.write(Day.MERGED_FILE_PATH)
-    merged_file.close()
-    with open('data.json', 'w', encoding='utf-8') as f:
+    # save
+    pages_zip.close()
+    merged_pdf.write(today.merged_file_path)
+    merged_pdf.close()
+    data_path = os.path.join(today.dir_path, 'data.json')
+    with open(data_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
+
+    # clean pages pdf
+    for page in pages:
+        os.remove(page.path)
+
+
+def main():
+    get_today_peoples_daily()
 
 
 if __name__ == '__main__':
