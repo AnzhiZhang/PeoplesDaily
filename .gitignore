@@ -2,7 +2,7 @@
 /.idea/
 
 # python
-/venv/
+__pycache__/
 
 # data
 /data/
