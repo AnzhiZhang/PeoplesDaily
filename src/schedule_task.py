@@ -7,7 +7,7 @@ from peoples_daily import TodayPeopleDaily
 from send_email import EmailConfig, send_email
 
 
-def get_today_peoples_daily(email_config: EmailConfig):
+def rcon_task(email_config: EmailConfig):
     # get today peoples daily
     today_peoples_daily = TodayPeopleDaily()
     today_peoples_daily.get_today_peoples_daily()
@@ -52,7 +52,7 @@ def main():
     # build scheduler
     scheduler = BlockingScheduler(timezone=datetime.UTC)
     scheduler.add_job(
-        get_today_peoples_daily,
+        rcon_task,
         'cron',
         hour='22',
         minute='0',
