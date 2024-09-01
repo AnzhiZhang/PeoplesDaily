@@ -23,47 +23,13 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Script
-        run: python main.py
-
-      - name: Read Date
-        id: read_date
-        uses: ashley-taylor/read-json-property-action@v1
-        with:
-          path: data.json
-          property: date
-
-      - name: Read Page Count
-        id: read_page_count
-        uses: ashley-taylor/read-json-property-action@v1
-        with:
-          path: data.json
-          property: page_count
-
-      - name: Read Pages Zip Path
-        id: read_pages_zip_path
-        uses: ashley-taylor/read-json-property-action@v1
-        with:
-          path: data.json
-          property: pages_zip_path
-
-      - name: Read Merged PDF Path
-        id: read_merged_pdf_path
-        uses: ashley-taylor/read-json-property-action@v1
-        with:
-          path: data.json
-          property: merged_pdf_path
-
-      - name: Read Release Body
-        id: read_release_body
-        uses: ashley-taylor/read-json-property-action@v1
-        with:
-          path: data.json
-          property: release_body
+        id: run_script
+        run: python main.py --write-github-output
 
       - name: Create Release and Upload
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create ${{ steps.read_date.outputs.value }} --title ${{ steps.read_date.outputs.value }} --notes ${{ steps.read_release_body.outputs.value }}
-          gh release upload ${{ steps.read_date.outputs.value }} ${{ steps.read_pages_zip_path.outputs.value }}
-          gh release upload ${{ steps.read_date.outputs.value }} ${{ steps.read_merged_pdf_path.outputs.value }}
+          gh release create ${{ steps.run_script.outputs.date }} --title ${{ steps.run_script.outputs.date }} --notes ${{ steps.run_script.outputs.release_body }}
+          gh release upload ${{ steps.run_script.outputs.date }} ${{ steps.run_script.outputs.pages_zip_path }}
+          gh release upload ${{ steps.run_script.outputs.date }} ${{ steps.run_script.outputs.merged_pdf_path }}
