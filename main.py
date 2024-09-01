@@ -2,7 +2,7 @@ import os
 import uuid
 import argparse
 
-from peoples_daily import TodayPeopleDaily
+from src.peoples_daily import TodayPeopleDaily
 
 
 def write_multiline_output(fh, name, value):

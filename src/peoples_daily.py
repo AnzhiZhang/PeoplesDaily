@@ -5,13 +5,14 @@ import zipfile
 import datetime
 
 import requests
+
 from pypdf import PdfWriter
 
 __all__ = [
     'TodayPeopleDaily',
 ]
 
-DATA_DIR = 'data'
+DATA_DIR = '../data'
 TIME_DELTA = datetime.timedelta(hours=8)
 HOME_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/nbs.D110000renmrb_01.htm'
 PAGE_HTML_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/nbs.D110000renmrb_{}.htm'

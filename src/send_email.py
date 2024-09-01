@@ -12,7 +12,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.utils import parseaddr, formataddr
 
-from main import TodayPeopleDaily
+from .peoples_daily import TodayPeopleDaily
 
 __all__ = [
     'EmailConfig',
