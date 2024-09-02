@@ -1,4 +1,3 @@
-import os
 import smtplib
 import argparse
 import datetime
