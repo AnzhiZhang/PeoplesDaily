@@ -2,7 +2,7 @@
 
 > 每日自动获取人民日报电子版
 
-## Usage
+## 使用方式
 
 ```bash
 python main.py
@@ -37,6 +37,7 @@ python ./src/schedule.py
 | SMTP_PASSWORD | SMTP 密码 |
 | SENDER | 发送者 |
 | RECIPIENTS | 接收者，多个用 `,` 分隔 |
+| WITH_ATTACHMENT | 是否发送附件 |
 
 ### Docker
 
