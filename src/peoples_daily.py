@@ -85,8 +85,13 @@ class TodayPeopleDaily:
         self.page_count = None
 
         self.dir_path = None
-        self.pages_file_path = None
-        self.merged_file_path = None
+        self.pages_zip_name = None
+        self.pages_zip_path = None
+        self.merged_pdf_name = None
+        self.merged_pdf_path = None
+        self.data_json_name = None
+        self.data_json_path = None
+
         self.release_body = None
 
         self.init()
@@ -106,8 +111,16 @@ class TodayPeopleDaily:
         self.page_count = requests.get(self.home_url).text.count('pageLink')
 
         self.dir_path = os.path.join(DATA_DIR, self.date)
-        self.pages_file_path = os.path.join(self.dir_path, f'{self.date}.zip')
-        self.merged_file_path = os.path.join(self.dir_path, f'{self.date}.pdf')
+        self.pages_zip_name = f'{self.date}.zip'
+        self.pages_zip_path = os.path.join(self.dir_path, self.pages_zip_name)
+        self.merged_pdf_name = f'{self.date}.pdf'
+        self.merged_pdf_path = os.path.join(
+            self.dir_path,
+            self.merged_pdf_name
+        )
+        self.data_json_name = 'data.json'
+        self.data_json_path = os.path.join(self.dir_path, self.data_json_name)
+
         self.release_body = (
             f'# [{self.date}]({self.home_url})'
             f'\n\n今日 {self.page_count} 版'
@@ -121,8 +134,8 @@ class TodayPeopleDaily:
         return {
             'date': self.date,
             'page_count': str(self.page_count),
-            'pages_zip_path': self.pages_file_path,
-            'merged_pdf_path': self.merged_file_path,
+            'pages_zip_path': self.pages_zip_path,
+            'merged_pdf_path': self.merged_pdf_path,
             'release_body': self.release_body
         }
 
@@ -134,7 +147,7 @@ class TodayPeopleDaily:
             pages.append(Page(self, page_number))
 
         # save file and data
-        pages_zip = zipfile.ZipFile(self.pages_file_path, 'w')
+        pages_zip = zipfile.ZipFile(self.pages_zip_path, 'w')
         merged_pdf = PdfWriter()
 
         # add pages
@@ -145,7 +158,7 @@ class TodayPeopleDaily:
             # pages zip
             pages_zip.write(page.path, os.path.basename(page.path))
 
-            # merged file
+            # merged pdf
             merged_pdf.append(page.path)
 
             # release body
@@ -158,10 +171,9 @@ class TodayPeopleDaily:
 
         # save
         pages_zip.close()
-        merged_pdf.write(self.merged_file_path)
+        merged_pdf.write(self.merged_pdf_path)
         merged_pdf.close()
-        data_path = os.path.join(self.dir_path, 'data.json')
-        with open(data_path, 'w', encoding='utf-8') as f:
+        with open(self.data_json_path, 'w', encoding='utf-8') as f:
             json.dump(self.data, f, indent=4, ensure_ascii=False)
 
         # clean pages pdf

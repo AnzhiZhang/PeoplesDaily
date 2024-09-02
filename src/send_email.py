@@ -89,17 +89,16 @@ def send_email(
 
     # attach pdf
     if config.with_attachment:
-        pdf_name = os.path.basename(today_peoples_daily.merged_file_path)
-        with open(today_peoples_daily.merged_file_path, 'rb') as f:
+        with open(today_peoples_daily.merged_pdf_path, 'rb') as f:
             mime = MIMEBase(
                 'application',
                 'pdf',
-                filename=pdf_name
+                filename=today_peoples_daily.merged_pdf_name
             )
             mime.add_header(
                 'Content-Disposition',
                 'attachment',
-                filename=pdf_name
+                filename=today_peoples_daily.merged_pdf_name
             )
             mime.add_header('Content-ID', '<0>')
             mime.add_header('X-Attachment-Id', '0')
