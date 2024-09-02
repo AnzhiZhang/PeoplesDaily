@@ -2,3 +2,4 @@ requests
 pypdf
 markdown2
 apscheduler
+oss2
