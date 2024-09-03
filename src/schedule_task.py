@@ -30,10 +30,10 @@ def rcon_task(oss_config: OSSConfig, email_config: EmailConfig):
 
 def main():
     # oss config
-    access_key_id = os.environ['OSS_ACCESS_KEY_ID']
-    access_key_secret = os.environ['OSS_ACCESS_KEY_SECRET']
-    endpoint = os.environ['OSS_ENDPOINT']
-    bucket_name = os.environ['OSS_BUCKET_NAME']
+    access_key_id = os.environ.get('OSS_ACCESS_KEY_ID', '')
+    access_key_secret = os.environ.get('OSS_ACCESS_KEY_SECRET', '')
+    endpoint = os.environ.get('OSS_ENDPOINT', '')
+    bucket_name = os.environ.get('OSS_BUCKET_NAME', '')
     oss_config = OSSConfig(
         access_key_id,
         access_key_secret,
