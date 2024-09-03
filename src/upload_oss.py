@@ -2,7 +2,7 @@ import argparse
 
 import oss2
 
-from src.peoples_daily import TodayPeopleDaily
+from peoples_daily import TodayPeopleDaily
 
 __all__ = [
     'OSSConfig',
