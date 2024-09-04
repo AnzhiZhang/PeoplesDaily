@@ -16,12 +16,16 @@ class OSSConfig:
             access_key_secret: str,
             endpoint: str,
             bucket_name: str,
+            is_cname: bool,
+            region: str
     ):
         self.enabled = enabled
         self.access_key_id = access_key_id
         self.access_key_secret = access_key_secret
         self.endpoint = endpoint
         self.bucket_name = bucket_name
+        self.is_cname = is_cname
+        self.region = region
 
     def __repr__(self):
         return (
@@ -31,6 +35,8 @@ class OSSConfig:
             f'access_key_secret={self.access_key_secret!r}, '
             f'endpoint={self.endpoint!r}, '
             f'bucket_name={self.bucket_name!r}'
+            f'is_cname={self.is_cname!r}'
+            f'region={self.region!r}'
             f')'
         )
 
@@ -40,11 +46,13 @@ def upload_to_oss(
         today_peoples_daily: TodayPeopleDaily
 ):
     # construct oss bucket
-    auth = oss2.Auth(oss_config.access_key_id, oss_config.access_key_secret)
+    auth = oss2.AuthV4(oss_config.access_key_id, oss_config.access_key_secret)
     bucket = oss2.Bucket(
         auth,
         oss_config.endpoint,
-        oss_config.bucket_name
+        oss_config.bucket_name,
+        is_cname=oss_config.is_cname,
+        region=oss_config.region
     )
 
     # upload to oss

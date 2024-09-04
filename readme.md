@@ -37,6 +37,8 @@ python main.py --cron-enabled
 | OSS_ACCESS_KEY_SECRET | OSS Access Key Secret |
 | OSS_ENDPOINT | OSS Endpoint |
 | OSS_BUCKET_NAME | OSS Bucket Name |
+| OSS_IS_CNAME | OSS 是否使用自定义域名 |
+| OSS_REGION | OSS Region |
 | EMAIL_ENABLED | 是否启用邮件发送 |
 | EMAIL_SMTP_SERVER | SMTP 服务器 |
 | EMAIL_SMTP_PORT | SMTP 端口 |

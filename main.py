@@ -67,6 +67,16 @@ def build_arg_parser():
         "--oss-bucket-name",
         help="OSS bucket name",
     )
+    parser.add_argument(
+        "--oss-is-cname",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="OSS is CNAME",
+    )
+    parser.add_argument(
+        "--oss-region",
+        help="OSS region",
+    )
 
     # email
     parser.add_argument(
@@ -122,7 +132,9 @@ def read_config_from_args(args) -> tuple[OSSConfig, EmailConfig]:
         args.oss_access_key_id,
         args.oss_access_key_secret,
         args.oss_endpoint,
-        args.oss_bucket_name
+        args.oss_bucket_name,
+        args.oss_is_cname,
+        args.oss_region
     )
 
     # email config
@@ -152,12 +164,16 @@ def read_config_from_env() -> tuple[OSSConfig, EmailConfig]:
     oss_access_key_secret = os.environ.get('OSS_ACCESS_KEY_SECRET', '')
     oss_endpoint = os.environ.get('OSS_ENDPOINT', '')
     oss_bucket_name = os.environ.get('OSS_BUCKET_NAME', '')
+    oss_is_cname = get_bool_env('OSS_IS_CNAME')
+    oss_region = os.environ.get('OSS_REGION', '')
     oss_config = OSSConfig(
         oss_enabled,
         oss_access_key_id,
         oss_access_key_secret,
         oss_endpoint,
         oss_bucket_name,
+        oss_is_cname,
+        oss_region
     )
 
     # email config
