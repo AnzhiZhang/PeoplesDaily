@@ -96,6 +96,8 @@ class TodayPeopleDaily:
 
         self.release_body = None
 
+        self.oss_merged_pdf_url = None
+
         self.init()
 
     def init(self):
@@ -175,3 +177,6 @@ class TodayPeopleDaily:
         # clean pages pdf
         for page in pages:
             os.remove(page.path)
+
+    def set_oss_url(self, url: str):
+        self.oss_merged_pdf_url = url

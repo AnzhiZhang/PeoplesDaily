@@ -91,6 +91,13 @@ def send_email(
         'utf-8'
     ).encode()
 
+    # add oss paragraph
+    if today_peoples_daily.oss_merged_pdf_url is not None:
+        oss_paragraph = markdown2.markdown(
+            f'[在线阅读 PDF]({today_peoples_daily.oss_merged_pdf_url})'
+        )
+        msg.attach(MIMEText(oss_paragraph, 'html', 'utf-8'))
+
     # add table of contents
     msg.attach(MIMEText(
         markdown2.markdown(today_peoples_daily.release_body),

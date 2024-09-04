@@ -232,7 +232,7 @@ def daily_task(
     # upload to oss
     if oss_config.enabled:
         upload_to_oss(oss_config, today_peoples_daily)
-        print("Uploaded to OSS")
+        print(f"Uploaded to OSS at {today_peoples_daily.oss_merged_pdf_url}")
 
     # send email
     if email_config.enabled:

@@ -60,6 +60,10 @@ def upload_to_oss(
     )
 
     # upload to oss
+    merged_pdf_key = join_oss_key(
+        today_peoples_daily.date,
+        today_peoples_daily.merged_pdf_name
+    )
     bucket.put_object_from_file(
         join_oss_key(
             today_peoples_daily.date,
@@ -68,10 +72,7 @@ def upload_to_oss(
         today_peoples_daily.pages_zip_path
     )
     bucket.put_object_from_file(
-        join_oss_key(
-            today_peoples_daily.date,
-            today_peoples_daily.merged_pdf_name
-        ),
+        merged_pdf_key,
         today_peoples_daily.merged_pdf_path
     )
     bucket.put_object_from_file(
@@ -81,3 +82,6 @@ def upload_to_oss(
         ),
         today_peoples_daily.data_json_path
     )
+
+    # set oss merged pdf url
+    today_peoples_daily.set_oss_url(f'{oss_config.endpoint}/{merged_pdf_key}')
