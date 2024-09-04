@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.1.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.0.2...v1.1.0) (2024-09-04)
+
+
+### Features
+
+* ✨ add oss url in email ([e156be4](https://github.com/AnzhiZhang/PeoplesDaily/commit/e156be4ee391a4913a1ac82df91176440e5f9ea0))
+* ✨ add upload to oss ([d5f1646](https://github.com/AnzhiZhang/PeoplesDaily/commit/d5f16469937dcc7e755b7d40fd6c2ece3f8d5741))
+* ✨ allow set with_attachment in schedule task ([75c5f09](https://github.com/AnzhiZhang/PeoplesDaily/commit/75c5f095a2006399de67c5d8631fe19b061a5ef5))
+* ✨ set schedule task run at 22:00 ([325c3b0](https://github.com/AnzhiZhang/PeoplesDaily/commit/325c3b0ea47260ed5047b3dac4620513910b9e7c))
+* ✨ set schedule task run at 23:00 ([593e505](https://github.com/AnzhiZhang/PeoplesDaily/commit/593e50528fe114ae104261871e96037294bc315b))
+* 🔇 disable pypdf warnings ([408e5ab](https://github.com/AnzhiZhang/PeoplesDaily/commit/408e5ab5ab2f682dce113254f7066526e5f6ba02))
+* 🔊 update log ([39b2031](https://github.com/AnzhiZhang/PeoplesDaily/commit/39b20316e6ac13da003bc6576cb029d628cd6e33))
+* 🔒️ use AuthV4 for upload to oss ([e7c65db](https://github.com/AnzhiZhang/PeoplesDaily/commit/e7c65dbbae42b54ce5b47c750f78af173ed66bf9))
+
+
+### Bug Fixes
+
+* 🐛 add with_attachment arg ([fdff31c](https://github.com/AnzhiZhang/PeoplesDaily/commit/fdff31cd1ac497dd1c62e8e32c036e9726b70ac3))
+* 🐛 fix data dir ([bd850ac](https://github.com/AnzhiZhang/PeoplesDaily/commit/bd850aca78f2e9d8834be180b83e71d0f46ada97))
+* 🐛 fix get oss config from environ ([2793c7b](https://github.com/AnzhiZhang/PeoplesDaily/commit/2793c7bdf1f83f6e4f4cdb78c68b62a593bb2bd0))
+* 🐛 fix import path ([d0d52cf](https://github.com/AnzhiZhang/PeoplesDaily/commit/d0d52cf72e0488ffb6acc521290bb891b4304dc7))
+* 🔇 log config on start ([6a9aa90](https://github.com/AnzhiZhang/PeoplesDaily/commit/6a9aa90b4b90a3de139a25131d04c34076ccc88a))
+
 ## [1.0.2](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.0.1...v1.0.2) (2024-09-01)
 
 
