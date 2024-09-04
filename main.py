@@ -206,24 +206,25 @@ def read_config_from_env() -> tuple[OSSConfig, EmailConfig]:
     return oss_config, email_config
 
 
-def daily_task(
-        oss_config: OSSConfig,
-        email_config: EmailConfig,
-        date: datetime.date = None
-) -> TodayPeopleDaily:
+def log_config(oss_config: OSSConfig, email_config: EmailConfig):
     # log oss config
     if oss_config.enabled:
-        print(f"OSS enabled with config: {oss_config}")
+        print(f"OSS enabled")
     else:
         print("OSS disabled")
 
     # log email config
     if email_config.enabled:
-        print(f"Email enabled with config: {email_config}")
         print(f"Email enabled with recipients: {email_config.recipients}")
     else:
         print("Email disabled")
 
+
+def daily_task(
+        oss_config: OSSConfig,
+        email_config: EmailConfig,
+        date: datetime.date = None
+) -> TodayPeopleDaily:
     # get today peoples daily
     today_peoples_daily = TodayPeopleDaily(date)
     today_peoples_daily.get_today_peoples_daily()
@@ -246,10 +247,7 @@ def daily_task(
     return today_peoples_daily
 
 
-def main_once(args):
-    # read config
-    oss_config, email_config = read_config_from_args(args)
-
+def main_once(args, oss_config: OSSConfig, email_config: EmailConfig):
     # run task
     today_peoples_daily = daily_task(oss_config, email_config, args.date)
 
@@ -263,10 +261,7 @@ def main_once(args):
                     print(f'{name}={value}', file=fh)
 
 
-def main_cron():
-    # read config
-    oss_config, email_config = read_config_from_env()
-
+def main_cron(oss_config: OSSConfig, email_config: EmailConfig):
     # build scheduler
     scheduler = BlockingScheduler(timezone=datetime.UTC)
     scheduler.add_job(
@@ -282,15 +277,17 @@ def main_cron():
 
 
 def main():
-    # parse arguments
+    # parse args
     parser = build_arg_parser()
     args = parser.parse_args()
 
     # run
     if args.cron_enabled:
-        main_cron()
+        oss_config, email_config = read_config_from_args(args)
+        main_cron(oss_config, email_config)
     else:
-        main_once(args)
+        oss_config, email_config = read_config_from_args(args)
+        main_once(args, oss_config, email_config)
 
 
 if __name__ == '__main__':
