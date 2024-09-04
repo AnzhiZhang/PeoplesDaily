@@ -41,6 +41,10 @@ class OSSConfig:
         )
 
 
+def join_oss_key(date: str, name: str) -> str:
+    return f'{date}/{name}'
+
+
 def upload_to_oss(
         oss_config: OSSConfig,
         today_peoples_daily: TodayPeopleDaily
@@ -57,14 +61,23 @@ def upload_to_oss(
 
     # upload to oss
     bucket.put_object_from_file(
-        f'{today_peoples_daily.date}/{today_peoples_daily.pages_zip_name}',
+        join_oss_key(
+            today_peoples_daily.date,
+            today_peoples_daily.pages_zip_name
+        ),
         today_peoples_daily.pages_zip_path
     )
     bucket.put_object_from_file(
-        f'{today_peoples_daily.date}/{today_peoples_daily.merged_pdf_name}',
+        join_oss_key(
+            today_peoples_daily.date,
+            today_peoples_daily.merged_pdf_name
+        ),
         today_peoples_daily.merged_pdf_path
     )
     bucket.put_object_from_file(
-        f'{today_peoples_daily.date}/{today_peoples_daily.data_json_name}',
+        join_oss_key(
+            today_peoples_daily.date,
+            today_peoples_daily.data_json_name
+        ),
         today_peoples_daily.data_json_path
     )
