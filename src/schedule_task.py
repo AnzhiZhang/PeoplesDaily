@@ -78,7 +78,7 @@ def main():
     scheduler.add_job(
         rcon_task,
         'cron',
-        hour='22',
+        hour='23',
         minute='0',
         args=(oss_config, email_config)
     )
