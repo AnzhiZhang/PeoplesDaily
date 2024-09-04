@@ -1,5 +1,4 @@
 import smtplib
-import argparse
 import datetime
 
 import markdown2
@@ -11,7 +10,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.utils import parseaddr, formataddr
 
-from peoples_daily import TodayPeopleDaily
+from .peoples_daily import TodayPeopleDaily
 
 __all__ = [
     'EmailConfig',
@@ -24,27 +23,40 @@ DAY_OF_WEEK = ['一', '二', '三', '四', '五', '六', '日']
 class EmailConfig:
     def __init__(
             self,
+            enabled: bool,
             smtp_server: str,
             smtp_port: int,
-            smtp_ssl: bool,
+            smtp_use_ssl: bool,
             smtp_user: str,
             smtp_password: str,
             sender: str,
             recipients: list[str],
             with_attachment: bool = False
     ):
+        self.enabled = enabled
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
-        self.smtp_ssl = smtp_ssl
+        self.smtp_use_ssl = smtp_use_ssl
         self.smtp_user = smtp_user
         self.smtp_password = smtp_password
         self.sender = sender
         self.recipients = recipients
         self.with_attachment = with_attachment
 
-    @property
-    def enabled(self):
-        return len(self.recipients) != 0
+    def __repr__(self):
+        return (
+            f'{self.__class__.__name__}('
+            f'enabled={self.enabled!r}, '
+            f'smtp_server={self.smtp_server!r}, '
+            f'smtp_port={self.smtp_port!r}, '
+            f'smtp_use_ssl={self.smtp_use_ssl!r}, '
+            f'smtp_user={self.smtp_user!r}, '
+            f'smtp_password={self.smtp_password!r}, '
+            f'sender={self.sender!r}, '
+            f'recipients={self.recipients!r}, '
+            f'with_attachment={self.with_attachment!r}'
+            f')'
+        )
 
 
 def format_addr(s):
@@ -57,7 +69,7 @@ def send_email(
         today_peoples_daily: TodayPeopleDaily
 ):
     # connect smtp server
-    if config.smtp_ssl:
+    if config.smtp_use_ssl:
         server = smtplib.SMTP_SSL(config.smtp_server, config.smtp_port)
     else:
         server = smtplib.SMTP(config.smtp_server, config.smtp_port)
@@ -112,81 +124,3 @@ def send_email(
 
     # quit server
     server.quit()
-
-
-def main():
-    # setup parser
-    parser = argparse.ArgumentParser(
-        description="Send People's Daily by email",
-    )
-    parser.add_argument(
-        "--smtp-server",
-        help="SMTP server",
-    )
-    parser.add_argument(
-        "--smtp-port",
-        help="SMTP port",
-    )
-    parser.add_argument(
-        "--smtp-ssl",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="SMTP SSL",
-    )
-    parser.add_argument(
-        "--smtp-user",
-        help="SMTP user",
-    )
-    parser.add_argument(
-        "--smtp-password",
-        help="SMTP password",
-    )
-    parser.add_argument(
-        "--sender",
-        help="Sender",
-    )
-    parser.add_argument(
-        "--recipients",
-        help="Recipients",
-        nargs='+',
-    )
-    parser.add_argument(
-        "--with-attachment",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="With attachment",
-    )
-
-    # parse arguments
-    args = parser.parse_args()
-    smtp_server = args.smtp_server
-    smtp_port = args.smtp_port
-    smtp_ssl = args.smtp_ssl
-    smtp_user = args.smtp_user
-    smtp_password = args.smtp_password
-    sender = args.sender
-    recipients = args.recipients
-    with_attachment = args.with_attachment
-
-    # get today peoples daily
-    today_peoples_daily = TodayPeopleDaily()
-    today_peoples_daily.get_today_peoples_daily()
-
-    # send email
-    send_email(
-        EmailConfig(
-            smtp_server,
-            smtp_port,
-            smtp_ssl,
-            smtp_user,
-            smtp_password,
-            sender,
-            recipients,
-            with_attachment
-        ),
-        today_peoples_daily
-    )
-
-
-if __name__ == '__main__':
-    main()

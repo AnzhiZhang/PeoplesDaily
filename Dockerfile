@@ -9,4 +9,4 @@ RUN pip install -r /peoplesdaily/requirements.txt --no-cache-dir
 ENV LANG=C.UTF-8
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python", "/peoplesdaily/src/schedule_task.py"]
+CMD ["python", "/peoplesdaily/main.py", "--cron-enabled"]

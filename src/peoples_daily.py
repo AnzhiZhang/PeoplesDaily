@@ -74,12 +74,14 @@ class Page:
 
 
 class TodayPeopleDaily:
-    def __init__(self):
-        self.now = None
-        self.year = None
-        self.month = None
-        self.day = None
-        self.date = None
+    def __init__(self, date: datetime.date = None):
+        if date is None:
+            date = datetime.datetime.now(datetime.UTC) + TIME_DELTA
+
+        self.year = str(date.year).zfill(4)
+        self.month = str(date.month).zfill(2)
+        self.day = str(date.day).zfill(2)
+        self.date = '-'.join([self.year, self.month, self.day])
 
         self.home_url = None
         self.page_count = None
@@ -97,12 +99,6 @@ class TodayPeopleDaily:
         self.init()
 
     def init(self):
-        self.now = datetime.datetime.now(datetime.UTC) + TIME_DELTA
-        self.year = str(self.now.year).zfill(4)
-        self.month = str(self.now.month).zfill(2)
-        self.day = str(self.now.day).zfill(2)
-        self.date = '-'.join([self.year, self.month, self.day])
-
         self.home_url = HOME_URL_TEMPLATE.format(
             self.year,
             self.month,
@@ -167,7 +163,7 @@ class TodayPeopleDaily:
                 self.release_body += f'\n- [{title}]({url})'
 
             # log
-            print(f'added {page.title} into pages')
+            print(f'Added "{page.title}" into pages')
 
         # save
         pages_zip.close()
