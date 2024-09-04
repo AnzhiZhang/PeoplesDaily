@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import logging
 import zipfile
 import datetime
 
@@ -11,6 +12,9 @@ from pypdf import PdfWriter
 __all__ = [
     'TodayPeopleDaily',
 ]
+
+pypdf_logger = logging.getLogger("pypdf")
+pypdf_logger.setLevel(logging.ERROR)
 
 DATA_DIR = 'data'
 TIME_DELTA = datetime.timedelta(hours=8)
