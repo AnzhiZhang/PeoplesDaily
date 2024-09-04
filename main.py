@@ -283,10 +283,12 @@ def main():
 
     # run
     if args.cron_enabled:
-        oss_config, email_config = read_config_from_args(args)
+        oss_config, email_config = read_config_from_env()
+        log_config(oss_config, email_config)
         main_cron(oss_config, email_config)
     else:
         oss_config, email_config = read_config_from_args(args)
+        log_config(oss_config, email_config)
         main_once(args, oss_config, email_config)
 
 
