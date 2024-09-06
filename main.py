@@ -215,7 +215,10 @@ def log_config(oss_config: OSSConfig, email_config: EmailConfig):
 
     # log email config
     if email_config.enabled:
-        print(f"Email enabled with recipients: {email_config.recipients}")
+        print("Email enabled")
+        print("Email recipients:")
+        for recipient in email_config.recipients:
+            print(f"  - {recipient}")
     else:
         print("Email disabled")
 
