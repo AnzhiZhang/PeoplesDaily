@@ -2,8 +2,10 @@ import os
 import uuid
 import argparse
 import datetime
+from threading import Timer
 from apscheduler.schedulers.blocking import BlockingScheduler
 
+from src.exceptions import NoPagesFoundError
 from src.peoples_daily import TodayPeopleDaily
 from src.send_email import EmailConfig, send_email
 from src.upload_to_oss import OSSConfig, upload_to_oss
@@ -226,12 +228,29 @@ def log_config(oss_config: OSSConfig, email_config: EmailConfig):
 def daily_task(
         oss_config: OSSConfig,
         email_config: EmailConfig,
-        date: datetime.date = None
-) -> TodayPeopleDaily:
+        date: datetime.date = None,
+        retry: bool = False
+) -> TodayPeopleDaily | None:
     # get today peoples daily
     today_peoples_daily = TodayPeopleDaily(date)
-    today_peoples_daily.get_today_peoples_daily()
-    print(f"Got People's Daily for {today_peoples_daily.date}")
+    try:
+        today_peoples_daily.get_today_peoples_daily()
+        print(f"Got People's Daily for {today_peoples_daily.date}")
+    except NoPagesFoundError as e:
+        if retry:
+            print(
+                f"No pages found for {today_peoples_daily.date}, "
+                f"retry in 30 minutes..."
+            )
+            Timer(
+                30 * 60,
+                daily_task,
+                args=(oss_config, email_config),
+                kwargs={'date': date, 'retry': retry}
+            ).start()
+            return None
+        else:
+            raise e
 
     # upload to oss
     if oss_config.enabled:
@@ -270,9 +289,10 @@ def main_cron(oss_config: OSSConfig, email_config: EmailConfig):
     scheduler.add_job(
         daily_task,
         'cron',
-        hour='23',
+        hour='22',
         minute='0',
-        args=(oss_config, email_config)
+        args=(oss_config, email_config),
+        kwargs={'retry': True}
     )
 
     # start scheduler

@@ -5,6 +5,8 @@ import logging
 import zipfile
 import datetime
 
+from .exceptions import NoPagesFoundError
+
 import requests
 
 from pypdf import PdfWriter
@@ -87,9 +89,6 @@ class TodayPeopleDaily:
         self.day = str(date.day).zfill(2)
         self.date = '-'.join([self.year, self.month, self.day])
 
-        self.home_url = None
-        self.page_count = None
-
         self.dir_path = None
         self.pages_zip_name = None
         self.pages_zip_path = None
@@ -98,6 +97,9 @@ class TodayPeopleDaily:
         self.data_json_name = None
         self.data_json_path = None
 
+        self.home_url = None
+
+        self.page_count = None
         self.release_body = None
 
         self.oss_merged_pdf_url = None
@@ -105,13 +107,7 @@ class TodayPeopleDaily:
         self.init()
 
     def init(self):
-        self.home_url = HOME_URL_TEMPLATE.format(
-            self.year,
-            self.month,
-            self.day
-        )
-        self.page_count = requests.get(self.home_url).text.count('pageLink')
-
+        # path
         self.dir_path = os.path.join(DATA_DIR, self.date)
         self.pages_zip_name = f'{self.date}.zip'
         self.pages_zip_path = os.path.join(self.dir_path, self.pages_zip_name)
@@ -123,11 +119,14 @@ class TodayPeopleDaily:
         self.data_json_name = 'data.json'
         self.data_json_path = os.path.join(self.dir_path, self.data_json_name)
 
-        self.release_body = (
-            f'# [{self.date}]({self.home_url})'
-            f'\n\n今日 {self.page_count} 版'
+        # home url
+        self.home_url = HOME_URL_TEMPLATE.format(
+            self.year,
+            self.month,
+            self.day
         )
 
+        # create dir
         if not os.path.isdir(self.dir_path):
             os.makedirs(self.dir_path)
 
@@ -135,13 +134,26 @@ class TodayPeopleDaily:
     def data(self):
         return {
             'date': self.date,
-            'page_count': str(self.page_count),
             'pages_zip_path': self.pages_zip_path,
             'merged_pdf_path': self.merged_pdf_path,
+            'page_count': str(self.page_count),
             'release_body': self.release_body
         }
 
     def get_today_peoples_daily(self):
+        # get page count
+        self.page_count = requests.get(self.home_url).text.count('pageLink')
+
+        # check page count
+        if self.page_count == 0:
+            raise NoPagesFoundError('No pages found')
+
+        # release body
+        self.release_body = (
+            f'# [{self.date}]({self.home_url})'
+            f'\n\n今日 {self.page_count} 版'
+        )
+
         # download pages
         pages = []
         for i in range(self.page_count):
