@@ -234,6 +234,7 @@ def daily_task(
     # get today peoples daily
     today_peoples_daily = TodayPeopleDaily(date)
     try:
+        print(f"Getting {today_peoples_daily.date} People's Daily...")
         today_peoples_daily.get_today_peoples_daily()
         print(f"Got People's Daily for {today_peoples_daily.date}")
     except NoPagesFoundError as e:
