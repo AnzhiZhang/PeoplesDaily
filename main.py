@@ -6,9 +6,12 @@ from threading import Timer
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 from src.exceptions import NoPagesFoundError
+from src.logger import Logger
 from src.peoples_daily import TodayPeopleDaily
 from src.send_email import EmailConfig, send_email
 from src.upload_to_oss import OSSConfig, upload_to_oss
+
+logger = Logger("People's Daily")
 
 
 def write_multiline_output(fh, name, value):
@@ -211,18 +214,18 @@ def read_config_from_env() -> tuple[OSSConfig, EmailConfig]:
 def log_config(oss_config: OSSConfig, email_config: EmailConfig):
     # log oss config
     if oss_config.enabled:
-        print(f"OSS enabled")
+        logger.info(f"OSS enabled")
     else:
-        print("OSS disabled")
+        logger.info("OSS disabled")
 
     # log email config
     if email_config.enabled:
-        print("Email enabled")
-        print("Email recipients:")
+        logger.info("Email enabled")
+        logger.info("Email recipients:")
         for recipient in email_config.recipients:
-            print(f"  - {recipient}")
+            logger.info(f"  - {recipient}")
     else:
-        print("Email disabled")
+        logger.info("Email disabled")
 
 
 def daily_task(
@@ -231,18 +234,10 @@ def daily_task(
         date: datetime.date = None,
         retry: bool = False
 ) -> TodayPeopleDaily | None:
-    # get today peoples daily
-    today_peoples_daily = TodayPeopleDaily(date)
-    try:
-        print(f"Getting {today_peoples_daily.date} People's Daily...")
-        today_peoples_daily.get_today_peoples_daily()
-        print(f"Got People's Daily for {today_peoples_daily.date}")
-    except NoPagesFoundError as e:
+    # retry
+    def retry_func():
         if retry:
-            print(
-                f"No pages found for {today_peoples_daily.date}, "
-                f"retry in 30 minutes..."
-            )
+            logger.warning(f"retry in 30 minutes...")
             Timer(
                 30 * 60,
                 daily_task,
@@ -253,10 +248,25 @@ def daily_task(
         else:
             raise e
 
+    # get today peoples daily
+    today_peoples_daily = TodayPeopleDaily(logger, date)
+    try:
+        logger.info(f"Getting {today_peoples_daily.date} People's Daily...")
+        today_peoples_daily.get_today_peoples_daily()
+        logger.info(f"Got People's Daily for {today_peoples_daily.date}")
+    except NoPagesFoundError as e:
+        logger.warning(f"No pages found for {today_peoples_daily.date}")
+        retry_func()
+    except Exception as e:
+        logger.exception("Unknown error occurred", exc_info=e)
+        retry_func()
+
     # upload to oss
     if oss_config.enabled:
         upload_to_oss(oss_config, today_peoples_daily)
-        print(f"Uploaded to OSS at {today_peoples_daily.oss_merged_pdf_url}")
+        logger.info(
+            f"Uploaded to OSS at {today_peoples_daily.oss_merged_pdf_url}"
+        )
 
     # send email
     if email_config.enabled:
@@ -264,7 +274,7 @@ def daily_task(
             email_config,
             today_peoples_daily
         )
-        print(f"Sent email to {email_config.recipients}")
+        logger.info(f"Sent email to {email_config.recipients}")
 
     # return
     return today_peoples_daily

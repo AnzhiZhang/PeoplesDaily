@@ -4,6 +4,7 @@ import json
 import logging
 import zipfile
 import datetime
+from logging import Logger
 
 from .exceptions import NoPagesFoundError
 
@@ -80,9 +81,11 @@ class Page:
 
 
 class TodayPeopleDaily:
-    def __init__(self, date: datetime.date = None):
+    def __init__(self, logger: Logger, date: datetime.date = None):
         if date is None:
             date = datetime.datetime.now(datetime.UTC) + TIME_DELTA
+
+        self.logger = logger
 
         self.year = str(date.year).zfill(4)
         self.month = str(date.month).zfill(2)
@@ -181,7 +184,7 @@ class TodayPeopleDaily:
                 self.release_body += f'\n- [{title}]({url})'
 
             # log
-            print(f'Added "{page.title}" into pages')
+            self.logger.info(f'Added "{page.title}" into pages')
 
         # save
         pages_zip.close()
