@@ -42,7 +42,8 @@ class OSSConfig:
 
 
 def join_oss_key(date: str, name: str) -> str:
-    return f'{date}/{name}'
+    path = '/'.join(date.split('-'))
+    return f'{path}/{name}'
 
 
 def upload_to_oss(
