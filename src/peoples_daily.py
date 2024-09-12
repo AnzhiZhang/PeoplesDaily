@@ -111,7 +111,7 @@ class TodayPeopleDaily:
 
     def init(self):
         # path
-        self.dir_path = os.path.join(DATA_DIR, self.date)
+        self.dir_path = os.path.join(DATA_DIR, self.year, self.month, self.day)
         self.pages_zip_name = f'{self.date}.zip'
         self.pages_zip_path = os.path.join(self.dir_path, self.pages_zip_name)
         self.merged_pdf_name = f'{self.date}.pdf'
