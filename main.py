@@ -235,7 +235,7 @@ def daily_task(
         retry: bool = False
 ) -> TodayPeopleDaily | None:
     # retry
-    def retry_func():
+    def retry_func() -> None:
         if retry:
             logger.warning(f"retry in 30 minutes...")
             Timer(
@@ -244,7 +244,6 @@ def daily_task(
                 args=(oss_config, email_config),
                 kwargs={'date': date, 'retry': retry}
             ).start()
-            return None
         else:
             raise e
 
@@ -256,10 +255,10 @@ def daily_task(
         logger.info(f"Got People's Daily for {today_peoples_daily.date}")
     except NoPagesFoundError as e:
         logger.warning(f"No pages found for {today_peoples_daily.date}")
-        retry_func()
+        return retry_func()
     except Exception as e:
         logger.exception("Unknown error occurred", exc_info=e)
-        retry_func()
+        return retry_func()
 
     # upload to oss
     if oss_config.enabled:
