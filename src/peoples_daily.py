@@ -184,7 +184,7 @@ class TodayPeopleDaily:
                 self.release_body += f'\n- [{title}]({url})'
 
             # log
-            self.logger.info(f'Added "{page.title}" into pages')
+            self.logger.info(f'{self.date}: added "{page.title}" into pages')
 
         # save
         pages_zip.close()
