@@ -247,36 +247,39 @@ def daily_task(
         else:
             raise e
 
-    # get today peoples daily
+    # init today peoples daily
     today_peoples_daily = TodayPeopleDaily(logger, date)
+
+    # main task
     try:
+        # get today peoples daily
         logger.info(f"Getting {today_peoples_daily.date} People's Daily...")
         today_peoples_daily.get_today_peoples_daily()
         logger.info(f"Got People's Daily for {today_peoples_daily.date}")
+
+        # upload to oss
+        if oss_config.enabled:
+            upload_to_oss(oss_config, today_peoples_daily)
+            logger.info(
+                f"Uploaded to OSS at {today_peoples_daily.oss_merged_pdf_url}"
+            )
+
+        # send email
+        if email_config.enabled:
+            send_email(
+                email_config,
+                today_peoples_daily
+            )
+            logger.info(f"Sent email to {email_config.recipients}")
+
+        # return
+        return today_peoples_daily
     except NoPagesFoundError as e:
         logger.warning(f"No pages found for {today_peoples_daily.date}")
         return retry_func()
     except Exception as e:
         logger.exception("Unknown error occurred", exc_info=e)
         return retry_func()
-
-    # upload to oss
-    if oss_config.enabled:
-        upload_to_oss(oss_config, today_peoples_daily)
-        logger.info(
-            f"Uploaded to OSS at {today_peoples_daily.oss_merged_pdf_url}"
-        )
-
-    # send email
-    if email_config.enabled:
-        send_email(
-            email_config,
-            today_peoples_daily
-        )
-        logger.info(f"Sent email to {email_config.recipients}")
-
-    # return
-    return today_peoples_daily
 
 
 def main_once(args, oss_config: OSSConfig, email_config: EmailConfig):
