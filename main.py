@@ -3,7 +3,7 @@ import uuid
 import argparse
 import datetime
 from threading import Timer
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from src.exceptions import NoPagesFoundError
 from src.logger import Logger
@@ -298,7 +298,9 @@ def main_once(args, oss_config: OSSConfig, email_config: EmailConfig):
 
 def main_cron(oss_config: OSSConfig, email_config: EmailConfig):
     # build scheduler
-    scheduler = BlockingScheduler(timezone=datetime.UTC)
+    scheduler = BackgroundScheduler(timezone=datetime.UTC)
+
+    # Beijing time is UTC+8
     scheduler.add_job(
         daily_task,
         'cron',
@@ -310,6 +312,20 @@ def main_cron(oss_config: OSSConfig, email_config: EmailConfig):
 
     # start scheduler
     scheduler.start()
+
+    # command line
+    logger.info(
+        'Enter "exit" to exit, '
+        '"get yyyy-mm-dd" to get People\'s Daily of the day'
+    )
+    while True:
+        text = input()
+        if text == 'exit':
+            scheduler.shutdown()
+            break
+        elif text.startswith('get '):
+            date = datetime.date.fromisoformat(text[4:])
+            daily_task(oss_config, email_config, date)
 
 
 def main():
