@@ -146,11 +146,12 @@ class TodayPeopleDaily:
     def get_today_peoples_daily(self):
         # get page count
         self.page_count = requests.get(self.home_url).text.count('pageLink')
-        self.logger.info(f'今日 {self.page_count} 版')
 
         # check page count
         if self.page_count == 0:
             raise NoPagesFoundError('No pages found')
+        else:
+            self.logger.info(f'今日 {self.page_count} 版')
 
         # release body
         self.release_body = (
