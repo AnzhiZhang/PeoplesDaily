@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.2.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.1.0...v1.2.0) (2024-09-23)
+
+
+### Features
+
+* ✨ acept command line input ([c08db83](https://github.com/AnzhiZhang/PeoplesDaily/commit/c08db83b80821efb39211a1422a63b836991ea1a))
+* ✨ check page count and retry ([f64ab87](https://github.com/AnzhiZhang/PeoplesDaily/commit/f64ab879f843349c9f8f55d27c621e3c2c5a15eb))
+* ✨ update data path ([5b28ad5](https://github.com/AnzhiZhang/PeoplesDaily/commit/5b28ad54c57b64dc6795ea6ba7514e68173a131d))
+* ✨ update oss path ([7efa84e](https://github.com/AnzhiZhang/PeoplesDaily/commit/7efa84e32e3ddca0ec23b962d3a246938168786c))
+* 🔊 add log message ([140c998](https://github.com/AnzhiZhang/PeoplesDaily/commit/140c998fc5013462548267c0bd8da78655efa2f4))
+* 🔊 add log message ([1b47e9c](https://github.com/AnzhiZhang/PeoplesDaily/commit/1b47e9c390348382bed53a164cc1f826fcd26ab6))
+* 🔊 use logging.Logger ([4a5a021](https://github.com/AnzhiZhang/PeoplesDaily/commit/4a5a021ec1fd762b2af809cd4eb7a81a843eb2ad))
+
+
+### Bug Fixes
+
+* 🐛 fix error handing ([47fa2fb](https://github.com/AnzhiZhang/PeoplesDaily/commit/47fa2fb747b608276a181d98752d18a70a9cec79))
+* 🐛 fix read and log config ([f7a1041](https://github.com/AnzhiZhang/PeoplesDaily/commit/f7a104172ef75fc4db2d3c002beabcde7348b142))
+* 🔊 check before log page count ([ff6122f](https://github.com/AnzhiZhang/PeoplesDaily/commit/ff6122fe1ac49b49f5e991b689b9666c13282e53))
+* 🔊 update log message ([f82ec82](https://github.com/AnzhiZhang/PeoplesDaily/commit/f82ec820a88d989c213959a462b2c3af45161674))
+* 🥅 catch more errors ([eb0d78d](https://github.com/AnzhiZhang/PeoplesDaily/commit/eb0d78d9058d80a41e8e1ca9bfb22ecea7e366d6))
+
 ## [1.1.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.0.2...v1.1.0) (2024-09-04)
 
 
