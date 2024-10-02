@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.2.0...v1.3.0) (2024-10-02)
+
+
+### Features
+
+* ✨ add bookmarks in merged PDF ([8bf09ff](https://github.com/AnzhiZhang/PeoplesDaily/commit/8bf09ffc1fc303b3af429b826ae4af35a7ab58d2))
+
+
+### Bug Fixes
+
+* 🐛 fix multiple `To` headers in email ([054e794](https://github.com/AnzhiZhang/PeoplesDaily/commit/054e7947bf2d16ff04cdff7458b584cac8e1be43))
+
 ## [1.2.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.1.0...v1.2.0) (2024-09-23)
 
 
