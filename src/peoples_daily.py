@@ -178,7 +178,7 @@ class TodayPeopleDaily:
             pages_zip.write(page.path, os.path.basename(page.path))
 
             # merged pdf
-            merged_pdf.append(page.path)
+            merged_pdf.append(page.path, page.title)
 
             # release body
             self.release_body += f'\n\n## [{page.title}]({page.html_url})\n'
