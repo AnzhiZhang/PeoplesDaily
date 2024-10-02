@@ -125,8 +125,9 @@ def send_email(
             msg.attach(mime)
 
     # send email
+    msg['To'] = format_addr(config.sender)
     for recipient in config.recipients:
-        msg['To'] = format_addr(recipient)
+        msg.replace_header('To', format_addr(recipient))
         server.sendmail(config.sender, [recipient], msg.as_string())
 
     # quit server
