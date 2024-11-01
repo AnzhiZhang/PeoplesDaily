@@ -17,7 +17,8 @@ class OSSConfig:
             endpoint: str,
             bucket_name: str,
             is_cname: bool,
-            region: str
+            region: str,
+            pretty_endpoint: str | None,
     ):
         self.enabled = enabled
         self.access_key_id = access_key_id
@@ -26,6 +27,7 @@ class OSSConfig:
         self.bucket_name = bucket_name
         self.is_cname = is_cname
         self.region = region
+        self.pretty_endpoint = pretty_endpoint
 
     def __repr__(self):
         return (
@@ -37,6 +39,7 @@ class OSSConfig:
             f'bucket_name={self.bucket_name!r}'
             f'is_cname={self.is_cname!r}'
             f'region={self.region!r}'
+            f'pretty_endpoint={self.pretty_endpoint!r}'
             f')'
         )
 
@@ -85,4 +88,8 @@ def upload_to_oss(
     )
 
     # set oss merged pdf url
-    today_peoples_daily.set_oss_url(f'{oss_config.endpoint}/{merged_pdf_key}')
+    if oss_config.pretty_endpoint is not None:
+        endpoint = oss_config.pretty_endpoint
+    else:
+        endpoint = oss_config.endpoint
+    today_peoples_daily.set_oss_url(f'{endpoint}/{merged_pdf_key}')

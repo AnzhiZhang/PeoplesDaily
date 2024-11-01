@@ -82,6 +82,11 @@ def build_arg_parser():
         "--oss-region",
         help="OSS region",
     )
+    parser.add_argument(
+        "--oss-pretty-endpoint",
+        default=None,
+        help="OSS pretty endpoint",
+    )
 
     # email
     parser.add_argument(
@@ -139,7 +144,8 @@ def read_config_from_args(args) -> tuple[OSSConfig, EmailConfig]:
         args.oss_endpoint,
         args.oss_bucket_name,
         args.oss_is_cname,
-        args.oss_region
+        args.oss_region,
+        args.oss_pretty_endpoint
     )
 
     # email config
@@ -171,6 +177,7 @@ def read_config_from_env() -> tuple[OSSConfig, EmailConfig]:
     oss_bucket_name = os.environ.get('OSS_BUCKET_NAME', '')
     oss_is_cname = get_bool_env('OSS_IS_CNAME')
     oss_region = os.environ.get('OSS_REGION', '')
+    oss_pretty_endpoint = os.environ.get('OSS_PRETTY_ENDPOINT', None)
     oss_config = OSSConfig(
         oss_enabled,
         oss_access_key_id,
@@ -178,7 +185,8 @@ def read_config_from_env() -> tuple[OSSConfig, EmailConfig]:
         oss_endpoint,
         oss_bucket_name,
         oss_is_cname,
-        oss_region
+        oss_region,
+        oss_pretty_endpoint
     )
 
     # email config
