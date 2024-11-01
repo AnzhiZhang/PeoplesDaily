@@ -6,11 +6,10 @@ import zipfile
 import datetime
 from logging import Logger
 
-from .exceptions import NoPagesFoundError
-
 import requests
-
 from pypdf import PdfWriter
+
+from .exceptions import NoPagesFoundError
 
 __all__ = [
     'TodayPeopleDaily',
