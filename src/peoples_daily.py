@@ -29,36 +29,49 @@ ARTICLE_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/{}'
 
 class Page:
     def __init__(self, today: 'TodayPeopleDaily', page: str):
-        self.today = today
-        self.page = page
+        self.__today = today
+        self.__page = page
 
-        self.path = None
-        self.html_url = None
-        self.html = None
-        self.pdf = None
-
-        self.get_page()
+        self.__path = None
+        self.__html_url = None
+        self.__html = None
+        self.__pdf_url = None
 
     def get_page(self):
-        self.path = os.path.join(self.today.dir_path, f'{self.page}.pdf')
-        self.html_url = PAGE_HTML_URL_TEMPLATE.format(
-            self.today.year,
-            self.today.month,
-            self.today.day,
-            self.page
+        # get html and pdf
+        self.__path = os.path.join(self.__today.dir_path, f'{self.__page}.pdf')
+        self.__html_url = PAGE_HTML_URL_TEMPLATE.format(
+            self.__today.year,
+            self.__today.month,
+            self.__today.day,
+            self.__page
         )
-        self.html = requests.get(self.html_url).content.decode('utf-8')
-        pdf_url = PAGE_PDF_URL_TEMPLATE.format(
-            self.today.year,
-            self.today.month,
-            self.today.day,
-            self.page
+        self.__html = requests.get(self.__html_url).content.decode('utf-8')
+        self.__pdf_url = PAGE_PDF_URL_TEMPLATE.format(
+            self.__today.year,
+            self.__today.month,
+            self.__today.day,
+            self.__page
         )
-        self.pdf = requests.get(pdf_url).content
+
+        # save pdf
+        with open(self.__path, 'wb') as f:
+            f.write(requests.get(self.__pdf_url).content)
+
+    @property
+    def path(self):
+        return self.__path
+
+    @property
+    def html_url(self):
+        return self.__html_url
 
     @property
     def title(self):
-        return re.findall('<p class="left ban">(.*?)</p>', self.html)[0]
+        return re.findall(
+            '<p class="left ban">(.*?)</p>',
+            self.__html
+        )[0]
 
     @property
     def articles(self):
@@ -66,18 +79,14 @@ class Page:
             (
                 i[1].strip(),
                 ARTICLE_URL_TEMPLATE.format(
-                    self.today.year,
-                    self.today.month,
-                    self.today.day,
+                    self.__today.year,
+                    self.__today.month,
+                    self.__today.day,
                     i[0]
                 )
             ) for i in
-            re.findall('<a href=(nw.*?)>(.*?)</a>', self.html)
+            re.findall('<a href=(nw.*?)>(.*?)</a>', self.__html)
         ]
-
-    def save_pdf(self):
-        with open(self.path, 'wb') as f:
-            f.write(self.pdf)
 
 
 class TodayPeopleDaily:
@@ -172,7 +181,7 @@ class TodayPeopleDaily:
         # add pages
         for page in pages:
             # save pdf
-            page.save_pdf()
+            page.get_page()
 
             # pages zip
             pages_zip.write(page.path, os.path.basename(page.path))
