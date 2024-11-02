@@ -1,5 +1,5 @@
-requests
-pypdf
-markdown2
 apscheduler
+requests
+pypdf[image]
 oss2
+markdown2
