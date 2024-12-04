@@ -1,12 +1,13 @@
 import os
-import re
 import json
 import logging
 import zipfile
 import datetime
+import urllib.parse
 from logging import Logger
 
 import requests
+from bs4 import BeautifulSoup
 from pypdf import PdfWriter
 
 from .exceptions import NoPagesFoundError
@@ -20,42 +21,49 @@ pypdf_logger.setLevel(logging.ERROR)
 
 DATA_DIR = 'data'
 TIME_DELTA = datetime.timedelta(hours=8)
-HOME_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/nbs.D110000renmrb_01.htm'
-PAGE_HTML_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/nbs.D110000renmrb_{}.htm'
-PAGE_PDF_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/images/{0}-{1}/{2}/{3}/rmrb{0}{1}{2}{3}.pdf'
-ARTICLE_URL_TEMPLATE = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/{}'
+
+
+def get_page_html_url(today: 'TodayPeopleDaily', page: str):
+    # get page html url
+    if today.date < datetime.date(2024, 12, 1):
+        template = 'http://paper.people.com.cn/rmrb/html/{}-{}/{}/nbs.D110000renmrb_{}.htm'
+    elif today.date >= datetime.date(2024, 12, 1):
+        template = 'http://paper.people.com.cn/rmrb/pc/layout/{}{}/{}/node_{}.html'
+    else:
+        raise ValueError(f'Page HTML URL template not found for {today.date}')
+
+    # return
+    return template.format(today.year, today.month, today.day, page)
 
 
 class Page:
     def __init__(self, today: 'TodayPeopleDaily', page: str):
-        self.__today = today
-        self.__page = page
+        self.__today: 'TodayPeopleDaily' = today
+        self.__page: 'str' = page
 
-        self.__path = None
-        self.__html_url = None
-        self.__html = None
-        self.__pdf_url = None
+        self.__path: str | None = None
+        self.__html_url: str | None = None
+        self.__html: str | None = None
+        self.__soup: BeautifulSoup | None = None
+        self.__pdf_url: str | None = None
 
     def get_page(self):
         # get html and pdf
         self.__path = os.path.join(self.__today.dir_path, f'{self.__page}.pdf')
-        self.__html_url = PAGE_HTML_URL_TEMPLATE.format(
-            self.__today.year,
-            self.__today.month,
-            self.__today.day,
-            self.__page
-        )
+        self.__html_url = get_page_html_url(self.__today, self.__page)
         self.__html = requests.get(self.__html_url).content.decode('utf-8')
-        self.__pdf_url = PAGE_PDF_URL_TEMPLATE.format(
-            self.__today.year,
-            self.__today.month,
-            self.__today.day,
-            self.__page
-        )
+        self.__soup = BeautifulSoup(self.__html, 'html.parser')
+        self.__pdf_url = self.__get_pdf_url()
 
         # save pdf
         with open(self.__path, 'wb') as f:
             f.write(requests.get(self.__pdf_url).content)
+
+    def __get_pdf_url(self):
+        url_p = self.__soup.find('p', attrs={'class': 'right btn'})
+        url = url_p.find('a').get('href')
+        url = urllib.parse.urljoin(self.__html_url, url)
+        return url
 
     @property
     def path(self):
@@ -67,38 +75,39 @@ class Page:
 
     @property
     def title(self):
-        return re.findall(
-            '<p class="left ban">(.*?)</p>',
-            self.__html
-        )[0]
+        return self.__soup.find('p', attrs={'class': 'left ban'}).text.strip()
 
     @property
     def articles(self):
-        return [
-            (
-                i[1].strip(),
-                ARTICLE_URL_TEMPLATE.format(
-                    self.__today.year,
-                    self.__today.month,
-                    self.__today.day,
-                    i[0]
-                )
-            ) for i in
-            re.findall('<a href=(nw.*?)>(.*?)</a>', self.__html)
-        ]
+        # get news list
+        news_list = self.__soup.find('ul', attrs={'class': 'news-list'})
+
+        # parse articles
+        articles = []
+        for i in news_list.find_all('li'):
+            a = i.find('a')
+            articles.append((
+                a.text,
+                urllib.parse.urljoin(self.__html_url, a.get('href'))
+            ))
+
+        # return
+        return articles
 
 
 class TodayPeopleDaily:
     def __init__(self, logger: Logger, date: datetime.date = None):
         if date is None:
             date = datetime.datetime.now(datetime.UTC) + TIME_DELTA
+            date = date.date()
 
         self.logger = logger
+        self.date = date
 
         self.year = str(date.year).zfill(4)
         self.month = str(date.month).zfill(2)
         self.day = str(date.day).zfill(2)
-        self.date = '-'.join([self.year, self.month, self.day])
+        self.date_str = '-'.join([self.year, self.month, self.day])
 
         self.dir_path = None
         self.pages_zip_name = None
@@ -120,9 +129,9 @@ class TodayPeopleDaily:
     def init(self):
         # path
         self.dir_path = os.path.join(DATA_DIR, self.year, self.month, self.day)
-        self.pages_zip_name = f'{self.date}.zip'
+        self.pages_zip_name = f'{self.date_str}.zip'
         self.pages_zip_path = os.path.join(self.dir_path, self.pages_zip_name)
-        self.merged_pdf_name = f'{self.date}.pdf'
+        self.merged_pdf_name = f'{self.date_str}.pdf'
         self.merged_pdf_path = os.path.join(
             self.dir_path,
             self.merged_pdf_name
@@ -131,11 +140,7 @@ class TodayPeopleDaily:
         self.data_json_path = os.path.join(self.dir_path, self.data_json_name)
 
         # home url
-        self.home_url = HOME_URL_TEMPLATE.format(
-            self.year,
-            self.month,
-            self.day
-        )
+        self.home_url = get_page_html_url(self, '01')
 
         # create dir
         if not os.path.isdir(self.dir_path):
@@ -144,7 +149,7 @@ class TodayPeopleDaily:
     @property
     def data(self):
         return {
-            'date': self.date,
+            'date': self.date_str,
             'pages_zip_path': self.pages_zip_path,
             'merged_pdf_path': self.merged_pdf_path,
             'page_count': str(self.page_count),
@@ -163,7 +168,7 @@ class TodayPeopleDaily:
 
         # release body
         self.release_body = (
-            f'# [{self.date}]({self.home_url})'
+            f'# [{self.date_str}]({self.home_url})'
             f'\n\n今日 {self.page_count} 版'
         )
 

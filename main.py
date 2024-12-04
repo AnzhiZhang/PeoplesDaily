@@ -261,9 +261,9 @@ def daily_task(
     # main task
     try:
         # get today peoples daily
-        logger.info(f"Getting {today_peoples_daily.date} People's Daily...")
+        logger.info(f"Getting {today_peoples_daily.date_str} People's Daily...")
         today_peoples_daily.get_today_peoples_daily()
-        logger.info(f"Got People's Daily for {today_peoples_daily.date}")
+        logger.info(f"Got People's Daily for {today_peoples_daily.date_str}")
 
         # upload to oss
         if oss_config.enabled:
@@ -283,7 +283,7 @@ def daily_task(
         # return
         return today_peoples_daily
     except NoPagesFoundError as e:
-        logger.warning(f"No pages found for {today_peoples_daily.date}")
+        logger.warning(f"No pages found for {today_peoples_daily.date_str}")
         return retry_func()
     except Exception as e:
         logger.exception("Unknown error occurred", exc_info=e)

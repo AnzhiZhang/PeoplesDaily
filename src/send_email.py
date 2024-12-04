@@ -76,7 +76,7 @@ def send_email(
     server.login(config.smtp_user, config.smtp_password)
 
     # get date
-    date = datetime.datetime.strptime(today_peoples_daily.date, '%Y-%m-%d')
+    date = datetime.datetime.strptime(today_peoples_daily.date_str, '%Y-%m-%d')
 
     # construct email
     msg = MIMEMultipart()
