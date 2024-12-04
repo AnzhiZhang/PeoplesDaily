@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.3.0...v1.4.0) (2024-12-04)
+
+
+### Features
+
+* ✨ add oss pretty endpoint ([4cf2533](https://github.com/AnzhiZhang/PeoplesDaily/commit/4cf2533b39beae2baed441e07544849c385de55a))
+* ✨ delay download pdf to add pages ([67829d8](https://github.com/AnzhiZhang/PeoplesDaily/commit/67829d8de89f6f012c189ab2a0d10b4e9eb8a3a7))
+
+
+### Bug Fixes
+
+* 👽️ fix due to external changes ([500fd51](https://github.com/AnzhiZhang/PeoplesDaily/commit/500fd514c69728439a1c4878b4b35002141a4e27))
+
 ## [1.3.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.2.0...v1.3.0) (2024-10-02)
 
 
