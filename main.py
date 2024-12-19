@@ -2,7 +2,7 @@ import os
 import uuid
 import argparse
 import datetime
-from threading import Timer
+import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from src.exceptions import NoPagesFoundError
@@ -246,12 +246,14 @@ def daily_task(
     def retry_func() -> None:
         if retry:
             logger.warning(f"retry in 30 minutes...")
-            Timer(
+            thread = threading.Timer(
                 30 * 60,
                 daily_task,
                 args=(oss_config, email_config),
                 kwargs={'date': date, 'retry': retry}
-            ).start()
+            )
+            thread.name = f"retry-{today_peoples_daily.date_str}"
+            thread.start()
         else:
             raise e
 
