@@ -248,7 +248,7 @@ def daily_task(
         if retry:
             logger.warning(f"retry in 30 minutes...")
             thread = threading.Timer(
-                30 * 60,
+                60 * 30,
                 daily_task,
                 args=(oss_config, email_config),
                 kwargs={'date': date, 'retry': retry}
@@ -264,7 +264,9 @@ def daily_task(
     # main task
     try:
         # get today peoples daily
-        logger.info(f"Getting {today_peoples_daily.date_str} People's Daily...")
+        logger.info(
+            f"Getting People's Daily for {today_peoples_daily.date_str}..."
+        )
         func_timeout(60 * 10, today_peoples_daily.get_today_peoples_daily)
         logger.info(f"Got People's Daily for {today_peoples_daily.date_str}")
 
