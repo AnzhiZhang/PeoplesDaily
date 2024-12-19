@@ -333,6 +333,10 @@ def main_cron(oss_config: OSSConfig, email_config: EmailConfig):
         if text == 'exit':
             scheduler.shutdown()
             break
+        elif text == 'threads':
+            logger.info(f'Totally {len(threading.enumerate())} threads:')
+            for thread in threading.enumerate():
+                logger.info(f'  - {thread.name}: {thread}')
         elif text.startswith('get '):
             date = datetime.date.fromisoformat(text[4:])
             daily_task(oss_config, email_config, date)
