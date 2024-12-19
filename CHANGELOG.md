@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.5.0...v1.6.0) (2024-12-19)
+
+
+### Features
+
+* 🚸 update argument help ([5588849](https://github.com/AnzhiZhang/PeoplesDaily/commit/5588849879b84bb0dfb1d4611553eef9b73c00e6))
+
 ## [1.5.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.4.0...v1.5.0) (2024-12-19)
 
 
