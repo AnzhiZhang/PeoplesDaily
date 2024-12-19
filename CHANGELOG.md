@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.4.0...v1.5.0) (2024-12-19)
+
+
+### Features
+
+* ✨ add threads command ([c27c61d](https://github.com/AnzhiZhang/PeoplesDaily/commit/c27c61d8b4448ada0f46d05edaa1bf8b56aaee21))
+* ✨ set maximum 10 mins timeout ([da7c697](https://github.com/AnzhiZhang/PeoplesDaily/commit/da7c697320d76fb8edfbeec9c3d3326c1ddca596))
+* 🚸 update help messages ([a4cfe0b](https://github.com/AnzhiZhang/PeoplesDaily/commit/a4cfe0b8ef9ea41c84639d504db18f513c96d84d))
+
+
+### Bug Fixes
+
+* 🩹 set retry timer thread name ([df22616](https://github.com/AnzhiZhang/PeoplesDaily/commit/df226162176ab84296d08e4fd3be537912e2f51b))
+
 ## [1.4.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.3.0...v1.4.0) (2024-12-04)
 
 
