@@ -4,6 +4,7 @@ import argparse
 import datetime
 import threading
 from apscheduler.schedulers.background import BackgroundScheduler
+from func_timeout import func_timeout, FunctionTimedOut
 
 from src.exceptions import NoPagesFoundError
 from src.logger import Logger
@@ -264,7 +265,7 @@ def daily_task(
     try:
         # get today peoples daily
         logger.info(f"Getting {today_peoples_daily.date_str} People's Daily...")
-        today_peoples_daily.get_today_peoples_daily()
+        func_timeout(60 * 10, today_peoples_daily.get_today_peoples_daily)
         logger.info(f"Got People's Daily for {today_peoples_daily.date_str}")
 
         # upload to oss
@@ -286,6 +287,9 @@ def daily_task(
         return today_peoples_daily
     except NoPagesFoundError as e:
         logger.warning(f"No pages found for {today_peoples_daily.date_str}")
+        return retry_func()
+    except FunctionTimedOut:
+        logger.warning(f"Timed out for {today_peoples_daily.date_str}")
         return retry_func()
     except Exception as e:
         logger.exception("Unknown error occurred", exc_info=e)

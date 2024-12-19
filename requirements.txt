@@ -1,4 +1,5 @@
 apscheduler
+func-timeout
 requests
 beautifulsoup4
 pypdf[image]
