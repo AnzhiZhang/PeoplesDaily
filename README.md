@@ -49,7 +49,7 @@ python main.py --cron-enabled
 
 - `exit` 退出程序
 - `threads` 查看当前所有线程
-- `get <YYYY-MM-DD>` 获取指定日期
+- `get YYYY-MM-DD` 获取指定日期
 
 ## Docker
 

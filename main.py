@@ -332,7 +332,7 @@ def main_cron(oss_config: OSSConfig, email_config: EmailConfig):
     # command line
     logger.info(
         'Enter "exit" to exit, '
-        '"get <YYYY-MM-DD>" to get People\'s Daily of the day'
+        '"get YYYY-MM-DD" to get People\'s Daily of the day'
     )
     while True:
         text = input()
