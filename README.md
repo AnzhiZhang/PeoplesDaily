@@ -4,17 +4,13 @@
 
 ## 使用方式
 
+### 简单使用
+
 ```bash
 python main.py
 ```
 
-文件将保存在 `./data` 目录下。
-
-提供适当的命令行参数可以启用上传至阿里云 OSS 和发送邮件功能，详细帮助请使用 `--help` 参数查看。
-
-### 指定日期
-
-提供 `--date` 参数可以获取指定日期的电子版，格式为 `YYYY-MM-DD`。
+文件将保存在 `./data` 目录。提供 `--date` 参数可以获取指定日期的电子版，详细帮助请使用 `--help` 参数查看。
 
 ```bash
 python main.py --date 2021-01-01
@@ -28,7 +24,7 @@ python main.py --date 2021-01-01
 python main.py --cron-enabled
 ```
 
-启用定时任务后，邮件参数通过环境变量提供：
+启用定时任务后，参数通过环境变量提供：
 
 | 环境变量 | 说明 |
 | --- | --- |
@@ -49,6 +45,18 @@ python main.py --cron-enabled
 | EMAIL_RECIPIENTS | 接收者，多个用 `,` 分隔 |
 | EMAIL_WITH_ATTACHMENT | 是否发送附件 |
 
-### Docker Image
+该模式下，可以通过标准输入发送命令：
 
-定时任务已发布在 `zhanganzhi/peoplesdaily`，数据文件保存在 `/peoplesdaily/data`，邮件参数通过环境变量提供。
+- `exit` 退出程序
+- `threads` 查看当前所有线程
+- `get <YYYY-MM-DD>` 获取指定日期
+
+## Docker
+
+Docker 镜像发布在 Docker Hub 上，可以通过以下命令拉取：
+
+```bash
+docker pull zhanganzhi/peoplesdaily
+```
+
+直接以定时任务模式运行，数据文件保存在 `/peoplesdaily/data`。
