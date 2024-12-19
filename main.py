@@ -30,7 +30,7 @@ def build_arg_parser():
     parser.add_argument(
         '--date',
         type=datetime.date.fromisoformat,
-        help="Specific date",
+        help="Specific date in format 'YYYY-MM-DD'",
     )
 
     # cron enabled
@@ -326,7 +326,7 @@ def main_cron(oss_config: OSSConfig, email_config: EmailConfig):
     # command line
     logger.info(
         'Enter "exit" to exit, '
-        '"get yyyy-mm-dd" to get People\'s Daily of the day'
+        '"get <YYYY-MM-DD>" to get People\'s Daily of the day'
     )
     while True:
         text = input()
