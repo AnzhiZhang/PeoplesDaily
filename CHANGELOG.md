@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.5.0...v1.6.0) (2025-01-14)
+
+
+### Features
+
+* 🚸 update argument help ([5588849](https://github.com/AnzhiZhang/PeoplesDaily/commit/5588849879b84bb0dfb1d4611553eef9b73c00e6))
+
+
+### Bug Fixes
+
+* 🥅 catch send email error ([3406990](https://github.com/AnzhiZhang/PeoplesDaily/commit/3406990fcf3fd5d9ead9cc5ec8643ab9505bdd39))
+
 ## [1.5.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.4.0...v1.5.0) (2024-12-19)
 
 
