@@ -1,5 +1,6 @@
 import smtplib
 import datetime
+from smtplib import SMTPDataError
 
 import markdown2
 
@@ -128,7 +129,13 @@ def send_email(
     msg['To'] = format_addr(config.sender)
     for recipient in config.recipients:
         msg.replace_header('To', format_addr(recipient))
-        server.sendmail(config.sender, [recipient], msg.as_string())
+        try:
+            server.sendmail(config.sender, [recipient], msg.as_string())
+        except SMTPDataError as error:
+            today_peoples_daily.logger.warning(
+                f'Failed to send email to {recipient}',
+                exc_info=error
+            )
 
     # quit server
     server.quit()
