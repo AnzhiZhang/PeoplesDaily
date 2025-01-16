@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.6.0...v1.7.0) (2025-01-16)
+
+
+### Features
+
+* ✨ add unsubscribe link to email ([c8218be](https://github.com/AnzhiZhang/PeoplesDaily/commit/c8218be5f8cb15138b5895778d778eeb82f003cc))
+
 ## [1.6.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.5.0...v1.6.0) (2025-01-14)
 
 
