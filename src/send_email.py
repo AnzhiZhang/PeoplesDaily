@@ -106,6 +106,16 @@ def send_email(
         'utf-8'
     ))
 
+    # add unsubscribe link
+    msg.attach(MIMEText(
+        markdown2.markdown(
+            '[Click here to Unsubscribe]'
+            '(http://paper.people.com.cn/rmrb/paperindex.htm)'
+        ),
+        'html',
+        'utf-8'
+    ))
+
     # attach pdf
     if config.with_attachment:
         with open(today_peoples_daily.merged_pdf_path, 'rb') as f:
