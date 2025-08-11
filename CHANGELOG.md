@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.6.0...v1.6.1) (2025-08-11)
+
+
+### Build System
+
+* ⬆️ upgrade Python to 3.13 ([8bb3e53](https://github.com/AnzhiZhang/PeoplesDaily/commit/8bb3e53920323e6be3a05573389245ab3ffff2e3))
+
 ## [1.6.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.5.0...v1.6.0) (2025-01-16)
 
 
