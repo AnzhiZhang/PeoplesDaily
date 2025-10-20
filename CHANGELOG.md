@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.6.1...v1.7.0) (2025-10-20)
+
+
+### Features
+
+* 🔒 add TLS for secure email connection ([fbd9f4a](https://github.com/AnzhiZhang/PeoplesDaily/commit/fbd9f4a5d677bd13aa1fee26b58c044bfcf1dc7e))
+
 ## [1.6.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.6.0...v1.6.1) (2025-08-11)
 
 
