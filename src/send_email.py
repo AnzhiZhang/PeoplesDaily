@@ -1,3 +1,4 @@
+import ssl
 import smtplib
 import datetime
 from smtplib import SMTPDataError
@@ -74,6 +75,10 @@ def send_email(
         server = smtplib.SMTP_SSL(config.smtp_server, config.smtp_port)
     else:
         server = smtplib.SMTP(config.smtp_server, config.smtp_port)
+        context = ssl.create_default_context()
+        server.starttls(context=context)
+
+    # login
     server.login(config.smtp_user, config.smtp_password)
 
     # get date
