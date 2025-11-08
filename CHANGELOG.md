@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.0.0...v2.0.1) (2025-11-08)
+
+
+### Bug Fixes
+
+* update config file path ([0b81341](https://github.com/AnzhiZhang/PeoplesDaily/commit/0b813410be213a5594419ce515d5cacf20c577e6))
+
 ## [2.0.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.7.0...v2.0.0) (2025-11-08)
 
 
