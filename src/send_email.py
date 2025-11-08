@@ -1,6 +1,7 @@
 import ssl
 import smtplib
 import datetime
+import urllib.parse
 from smtplib import SMTPDataError
 
 import markdown2
@@ -19,6 +20,12 @@ __all__ = [
     'send_email',
 ]
 
+UNSUBSCRIBE_SUBJECT = "[People's Daily] Unsubscribe"
+UNSUBSCRIBE_BODY = (
+    "Hi Admin,\n\n"
+    "I would like to unsubscribe from the daily People's Daily email. Please remove my email from the mailing list.\n\n"
+    "Thank you."
+)
 DAY_OF_WEEK = ['一', '二', '三', '四', '五', '六', '日']
 
 
@@ -33,7 +40,9 @@ class EmailConfig:
             smtp_password: str,
             sender: str,
             recipients: list[str],
-            with_attachment: bool = False
+            with_attachment: bool = False,
+            unsubscribe_link_enabled: bool = False,
+            unsubscribe_link_address: str = None,
     ):
         self.enabled = enabled
         self.smtp_server = smtp_server
@@ -44,6 +53,8 @@ class EmailConfig:
         self.sender = sender
         self.recipients = recipients
         self.with_attachment = with_attachment
+        self.unsubscribe_link_enabled = unsubscribe_link_enabled
+        self.unsubscribe_link_address = unsubscribe_link_address
 
     def __repr__(self):
         return (
@@ -56,7 +67,9 @@ class EmailConfig:
             f'smtp_password={self.smtp_password!r}, '
             f'sender={self.sender!r}, '
             f'recipients={self.recipients!r}, '
-            f'with_attachment={self.with_attachment!r}'
+            f'with_attachment={self.with_attachment!r}, '
+            f'unsubscribe_link_enabled={self.unsubscribe_link_enabled!r}, '
+            f'unsubscribe_link_address={self.unsubscribe_link_address!r}'
             f')'
         )
 
@@ -64,6 +77,15 @@ class EmailConfig:
 def format_addr(s):
     name, addr = parseaddr(s)
     return formataddr((name, addr))
+
+
+def get_unsubscribe_link(address: str) -> str:
+    params = {
+        "subject": UNSUBSCRIBE_SUBJECT,
+        "body": UNSUBSCRIBE_BODY
+    }
+    query = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+    return f"mailto:{address}?{query}"
 
 
 def send_email(
@@ -110,6 +132,12 @@ def send_email(
         'html',
         'utf-8'
     ))
+
+    # add unsubscribe link
+    if config.unsubscribe_link_enabled:
+        link = get_unsubscribe_link(config.unsubscribe_link_address)
+        unsubscribe_paragraph = markdown2.markdown(f'[Unsubscribe]({link})')
+        msg.attach(MIMEText(unsubscribe_paragraph, 'html', 'utf-8'))
 
     # attach pdf
     if config.with_attachment:

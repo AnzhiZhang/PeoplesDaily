@@ -133,6 +133,16 @@ def build_arg_parser():
         default=False,
         help="With attachment",
     )
+    parser.add_argument(
+        "--email-unsubscribe-link-enabled",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Unsubscribe link enabled",
+    )
+    parser.add_argument(
+        "--email-unsubscribe-link-address",
+        help="Unsubscribe link address",
+    )
     return parser
 
 
@@ -160,6 +170,8 @@ def read_config_from_args(args) -> tuple[OSSConfig, EmailConfig]:
         args.email_sender,
         args.email_recipients,
         args.email_with_attachment,
+        args.email_unsubscribe_link_enabled,
+        args.email_unsubscribe_link_address
     )
 
     # return
@@ -204,6 +216,8 @@ def read_config_from_env() -> tuple[OSSConfig, EmailConfig]:
         if r.strip() != ''
     ]
     email_with_attachment = get_bool_env('EMAIL_WITH_ATTACHMENT')
+    email_unsubscribe_link_enabled = get_bool_env('EMAIL_UNSUBSCRIBE_LINK_ENABLED')
+    email_unsubscribe_link_address = os.environ.get('EMAIL_UNSUBSCRIBE_LINK_ADDRESS', '')
     email_config = EmailConfig(
         email_enabled,
         email_smtp_server,
@@ -214,6 +228,8 @@ def read_config_from_env() -> tuple[OSSConfig, EmailConfig]:
         email_sender,
         email_recipients,
         email_with_attachment,
+        email_unsubscribe_link_enabled,
+        email_unsubscribe_link_address
     )
 
     # return
