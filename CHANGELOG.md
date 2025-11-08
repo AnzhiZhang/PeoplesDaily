@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.7.0...v2.0.0) (2025-11-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* move config to yaml
+
+### Features
+
+* add unsubscribe link functionality to email configuration ([26498ad](https://github.com/AnzhiZhang/PeoplesDaily/commit/26498ad9f3b4569eb81a41a68133626037d1b66e))
+* move config to yaml ([1529113](https://github.com/AnzhiZhang/PeoplesDaily/commit/15291138bb502a81233e83eea817e0734e405c50))
+
 ## [1.7.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v1.6.1...v1.7.0) (2025-10-20)
 
 
