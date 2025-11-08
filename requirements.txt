@@ -1,3 +1,5 @@
+pyyaml
+pydantic
 apscheduler
 func-timeout
 requests
