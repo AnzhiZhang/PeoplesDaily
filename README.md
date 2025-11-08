@@ -24,7 +24,7 @@ python main.py 2021-01-01
 
 ## 配置
 
-配置文件位于 `config.yaml`，默认内容如下：
+配置文件位于 `config/config.yaml`，默认内容如下：
 
 ```yaml
 cron_enabled: false
@@ -92,4 +92,14 @@ Docker 镜像发布在 Docker Hub 上，容器名为 `zhanganzhi/peoplesdaily`�
 docker pull zhanganzhi/peoplesdaily
 ```
 
-数据文件保存在 `/peoplesdaily/data`，配置文件保存在 `/peoplesdaily/config.yaml`。
+数据文件保存在 `/peoplesdaily/data`，配置文件保存在 `/peoplesdaily/config/config.yaml`。您可能希望挂载这两个目录以保留数据和配置。
+
+运行容器的示例命令如下：
+
+```bash
+docker run -d \
+  -v /path/to/local/data:/peoplesdaily/data \
+  -v /path/to/local/config:/peoplesdaily/config \
+  --name peoplesdaily \
+  zhanganzhi/peoplesdaily
+```

@@ -4,7 +4,7 @@ from typing import List, Optional
 import yaml
 from pydantic import BaseModel, Field
 
-FILE_PATH = 'config.yaml'
+FILE_PATH = 'config/config.yaml'
 
 
 class OSSConfigSection(BaseModel):
@@ -47,7 +47,11 @@ def load_config() -> Config:
     # file path
     path = Path(FILE_PATH)
 
-    # write config if
+    # create config dir if not exists
+    if not path.parent.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    # write config if not exists
     if not path.exists():
         config = Config()
         path.write_text(
@@ -60,7 +64,9 @@ def load_config() -> Config:
         )
         return config
 
+    # load config
     data = yaml.safe_load(path.read_text('utf-8')) or {}
     config = Config.model_validate(data)
 
+    # return
     return config

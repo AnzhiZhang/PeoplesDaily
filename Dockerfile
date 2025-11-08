@@ -3,7 +3,7 @@ FROM python:3.14
 COPY . /peoplesdaily
 
 WORKDIR /peoplesdaily
-VOLUME /peoplesdaily/data
+VOLUME ["/peoplesdaily/config", "/peoplesdaily/data"]
 RUN pip install -r /peoplesdaily/requirements.txt --no-cache-dir
 
 ENV LANG=C.UTF-8
