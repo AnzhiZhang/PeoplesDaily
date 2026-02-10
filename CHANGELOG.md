@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.0.1...v2.1.0) (2026-02-10)
+
+
+### Features
+
+* add Telegram channel integration ([ffbaa42](https://github.com/AnzhiZhang/PeoplesDaily/commit/ffbaa424b4496474bb64707faa6030fa2b1b6c36))
+
 ## [2.0.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.0.0...v2.0.1) (2025-11-08)
 
 
