@@ -13,6 +13,8 @@ from pypdf import PdfWriter
 from .exceptions import NoPagesFoundError
 
 __all__ = [
+    'Article',
+    'Page',
     'TodayPeopleDaily',
 ]
 
@@ -36,6 +38,12 @@ def get_page_html_url(today: 'TodayPeopleDaily', page: str):
     return template.format(today.year, today.month, today.day, page)
 
 
+class Article:
+    def __init__(self, title: str, url: str):
+        self.title = title
+        self.url = url
+
+
 class Page:
     def __init__(self, today: 'TodayPeopleDaily', page: str):
         self.__today: 'TodayPeopleDaily' = today
@@ -46,6 +54,8 @@ class Page:
         self.__html: str | None = None
         self.__soup: BeautifulSoup | None = None
         self.__pdf_url: str | None = None
+
+        self.__articles: list['Article'] | None = None
 
     def get_page(self):
         # get html and pdf
@@ -59,26 +69,16 @@ class Page:
         with open(self.__path, 'wb') as f:
             f.write(requests.get(self.__pdf_url).content)
 
+        # get articles
+        self.__articles = self.__get_articles()
+
     def __get_pdf_url(self):
         url_p = self.__soup.find('p', attrs={'class': 'right btn'})
         url = url_p.find('a').get('href')
         url = urllib.parse.urljoin(self.__html_url, url)
         return url
 
-    @property
-    def path(self):
-        return self.__path
-
-    @property
-    def html_url(self):
-        return self.__html_url
-
-    @property
-    def title(self):
-        return self.__soup.find('p', attrs={'class': 'left ban'}).text.strip()
-
-    @property
-    def articles(self):
+    def __get_articles(self) -> list[Article]:
         # get news list
         news_list = self.__soup.find('ul', attrs={'class': 'news-list'})
 
@@ -86,13 +86,29 @@ class Page:
         articles = []
         for i in news_list.find_all('li'):
             a = i.find('a')
-            articles.append((
-                a.text,
-                urllib.parse.urljoin(self.__html_url, a.get('href'))
+            articles.append(Article(
+                title=a.text,
+                url=urllib.parse.urljoin(self.__html_url, a.get('href'))
             ))
 
         # return
         return articles
+
+    @property
+    def path(self):
+        return self.__path
+
+    @property
+    def title(self):
+        return self.__soup.find('p', attrs={'class': 'left ban'}).text.strip()
+
+    @property
+    def html_url(self):
+        return self.__html_url
+
+    @property
+    def articles(self) -> list[Article]:
+        return self.__articles
 
 
 class TodayPeopleDaily:
@@ -121,6 +137,7 @@ class TodayPeopleDaily:
 
         self.page_count = None
         self.release_body = None
+        self.pages: list['Page'] = []
 
         self.oss_merged_pdf_url = None
 
@@ -173,17 +190,17 @@ class TodayPeopleDaily:
         )
 
         # download pages
-        pages = []
+        self.pages = []
         for i in range(self.page_count):
             page_number = str(i + 1).zfill(2)
-            pages.append(Page(self, page_number))
+            self.pages.append(Page(self, page_number))
 
         # save file and data
         pages_zip = zipfile.ZipFile(self.pages_zip_path, 'w')
         merged_pdf = PdfWriter()
 
         # add pages
-        for page in pages:
+        for page in self.pages:
             # save pdf
             page.get_page()
 
@@ -195,8 +212,8 @@ class TodayPeopleDaily:
 
             # release body
             self.release_body += f'\n\n## [{page.title}]({page.html_url})\n'
-            for title, url in page.articles:
-                self.release_body += f'\n- [{title}]({url})'
+            for article in page.articles:
+                self.release_body += f'\n- [{article.title}]({article.url})'
 
             # log
             self.logger.info(f'{self.date}: added "{page.title}" into pages')
@@ -209,7 +226,7 @@ class TodayPeopleDaily:
             json.dump(self.data, f, indent=4, ensure_ascii=False)
 
         # clean pages pdf
-        for page in pages:
+        for page in self.pages:
             os.remove(page.path)
 
     def set_oss_url(self, url: str):

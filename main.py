@@ -12,6 +12,7 @@ from src.exceptions import NoPagesFoundError
 from src.logger import Logger
 from src.peoples_daily import TodayPeopleDaily
 from src.send_email import send_email
+from src.send_telegram import send_telegram
 from src.upload_to_oss import upload_to_oss
 
 logger = Logger("People's Daily")
@@ -39,6 +40,12 @@ def log_config(config: Config) -> None:
             logger.info(f"  - {recipient}")
     else:
         logger.info("Email disabled")
+
+    # log telegram config
+    if config.telegram.enabled:
+        logger.info("Telegram enabled")
+    else:
+        logger.info("Telegram disabled")
 
 
 def daily_task(
@@ -87,6 +94,14 @@ def daily_task(
                 today_peoples_daily
             )
             logger.info(f"Sent email to {config.email.recipients}")
+
+        # send telegram
+        if config.telegram.enabled:
+            send_telegram(
+                config,
+                today_peoples_daily
+            )
+            logger.info("Sent to Telegram")
 
         # return
         return today_peoples_daily

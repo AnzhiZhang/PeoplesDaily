@@ -31,12 +31,36 @@ class EmailConfigSection(BaseModel):
     unsubscribe_address: Optional[str] = None
 
 
+class TelegramConfigSection(BaseModel):
+    enabled: bool = False
+    bot_token: str = ''
+    channel_id: int = 0
+    discussion_chat_id: int = 0
+
+
 class Config(BaseModel):
     cron_enabled: bool = False
     write_github_output: bool = False
 
     oss: OSSConfigSection = Field(default_factory=OSSConfigSection)
     email: EmailConfigSection = Field(default_factory=EmailConfigSection)
+    telegram: TelegramConfigSection = Field(
+        default_factory=TelegramConfigSection
+    )
+
+
+def save_config(config: Config, path: Path) -> None:
+    """
+    Save config to the config file.
+    """
+    path.write_text(
+        yaml.safe_dump(
+            config.model_dump(),
+            sort_keys=False,
+            allow_unicode=True
+        ),
+        encoding='utf-8'
+    )
 
 
 def load_config() -> Config:
@@ -51,22 +75,19 @@ def load_config() -> Config:
     if not path.parent.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
 
-    # write config if not exists
+    # create default config if not exists
     if not path.exists():
         config = Config()
-        path.write_text(
-            yaml.safe_dump(
-                config.model_dump(),
-                sort_keys=False,
-                allow_unicode=True
-            ),
-            encoding='utf-8'
-        )
+        save_config(config, path)
         return config
 
     # load config
     data = yaml.safe_load(path.read_text('utf-8')) or {}
     config = Config.model_validate(data)
+
+    # write back if config file is missing any fields
+    if data != config.model_dump():
+        save_config(config, path)
 
     # return
     return config

@@ -7,3 +7,4 @@ beautifulsoup4
 pypdf[image]
 oss2
 markdown2
+python-telegram-bot
