@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.1.0...v2.1.1) (2026-02-11)
+
+
+### Bug Fixes
+
+* comment out telegram PDF sending ([2a7971e](https://github.com/AnzhiZhang/PeoplesDaily/commit/2a7971ed9552f404b43a1262a0235382f1d11adc))
+
 ## [2.1.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.0.1...v2.1.0) (2026-02-10)
 
 
