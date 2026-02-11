@@ -171,11 +171,13 @@ def send_telegram(
         config: Config,
         today_peoples_daily: TodayPeopleDaily
 ) -> None:
+    # check pdf exists
     pdf_path = Path(today_peoples_daily.merged_pdf_path)
     if not pdf_path.exists():
         today_peoples_daily.logger.warning(f"PDF not found: {pdf_path}")
         return
 
+    # build and send messages
     chunks = build_messages(today_peoples_daily)
     asyncio.run(send_messages(
         chunks,
