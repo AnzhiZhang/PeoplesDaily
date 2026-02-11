@@ -158,13 +158,13 @@ async def send_messages(
                 disable_web_page_preview=True,
             )
 
-        # send pdf to discussion group
-        with pdf_path.open("rb") as f:
-            await app.bot.send_document(
-                chat_id=discussion_chat_id,
-                document=InputFile(f, filename=pdf_path.name),
-                reply_to_message_id=forward_id,
-            )
+        # # send pdf to discussion group
+        # with pdf_path.open("rb") as f:
+        #     await app.bot.send_document(
+        #         chat_id=discussion_chat_id,
+        #         document=InputFile(f, filename=pdf_path.name),
+        #         reply_to_message_id=forward_id,
+        #     )
 
 
 def send_telegram(
