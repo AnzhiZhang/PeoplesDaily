@@ -171,6 +171,11 @@ def send_telegram(
         config: Config,
         today_peoples_daily: TodayPeopleDaily
 ) -> None:
+    # skip if already sent
+    if today_peoples_daily.status.telegram_sent:
+        today_peoples_daily.logger.info('Telegram send skipped (already done)')
+        return
+
     # check pdf exists
     pdf_path = Path(today_peoples_daily.merged_pdf_path)
     if not pdf_path.exists():
@@ -186,3 +191,10 @@ def send_telegram(
         config.telegram.channel_id,
         config.telegram.discussion_chat_id,
     ))
+
+    # persist status
+    today_peoples_daily.status.telegram_sent = True
+    today_peoples_daily.save_status()
+
+    # log
+    today_peoples_daily.logger.info('Sent to Telegram')

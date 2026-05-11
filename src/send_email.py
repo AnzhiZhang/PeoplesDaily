@@ -46,6 +46,11 @@ def send_email(
         config: Config,
         today_peoples_daily: TodayPeopleDaily
 ):
+    # skip if already sent
+    if today_peoples_daily.status.email_sent:
+        today_peoples_daily.logger.info('Email send skipped (already done)')
+        return
+
     # connect smtp server
     if config.email.smtp_use_ssl:
         server = smtplib.SMTP_SSL(
@@ -85,7 +90,7 @@ def send_email(
 
     # add table of contents
     msg.attach(MIMEText(
-        markdown2.markdown(today_peoples_daily.release_body),
+        markdown2.markdown(today_peoples_daily.summary),
         'html',
         'utf-8'
     ))
@@ -129,3 +134,10 @@ def send_email(
 
     # quit server
     server.quit()
+
+    # persist status
+    today_peoples_daily.status.email_sent = True
+    today_peoples_daily.save_status()
+
+    # log
+    today_peoples_daily.logger.info(f'Sent email to {config.email.recipients}')

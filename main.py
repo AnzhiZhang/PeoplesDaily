@@ -78,30 +78,18 @@ def daily_task(
             f"Getting People's Daily for {today_peoples_daily.date_str}..."
         )
         func_timeout(60 * 10, today_peoples_daily.get_today_peoples_daily)
-        logger.info(f"Got People's Daily for {today_peoples_daily.date_str}")
 
         # upload to oss
         if config.oss.enabled:
             upload_to_oss(config, today_peoples_daily)
-            logger.info(
-                f"Uploaded to OSS at {today_peoples_daily.oss_merged_pdf_url}"
-            )
 
         # send email
         if config.email.enabled:
-            send_email(
-                config,
-                today_peoples_daily
-            )
-            logger.info(f"Sent email to {config.email.recipients}")
+            send_email(config, today_peoples_daily)
 
         # send telegram
         if config.telegram.enabled:
-            send_telegram(
-                config,
-                today_peoples_daily
-            )
-            logger.info("Sent to Telegram")
+            send_telegram(config, today_peoples_daily)
 
         # return
         return today_peoples_daily
@@ -125,6 +113,8 @@ def main_once(config: Config, date: datetime.date) -> None:
     if config.write_github_output:
         with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
             for name, value in today_peoples_daily.data.items():
+                if not isinstance(value, str):
+                    continue
                 if '\n' in value:
                     write_multiline_output(fh, name, value)
                 else:

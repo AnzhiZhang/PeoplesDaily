@@ -17,6 +17,18 @@ def upload_to_oss(
         config: Config,
         today_peoples_daily: TodayPeopleDaily
 ):
+    # skip if already uploaded
+    if (
+            today_peoples_daily.status.oss_uploaded
+            and today_peoples_daily.status.oss_url
+    ):
+        today_peoples_daily.set_oss_url(today_peoples_daily.status.oss_url)
+        today_peoples_daily.logger.info(
+            f'OSS upload skipped (already done), '
+            f'url: {today_peoples_daily.oss_merged_pdf_url}'
+        )
+        return
+
     # construct oss bucket
     auth = oss2.AuthV4(config.oss.access_key_id, config.oss.access_key_secret)
     bucket = oss2.Bucket(
@@ -57,3 +69,13 @@ def upload_to_oss(
     else:
         endpoint = config.oss.endpoint
     today_peoples_daily.set_oss_url(f'{endpoint}/{merged_pdf_key}')
+
+    # persist status
+    today_peoples_daily.status.oss_uploaded = True
+    today_peoples_daily.status.oss_url = today_peoples_daily.oss_merged_pdf_url
+    today_peoples_daily.save_status()
+
+    # log
+    today_peoples_daily.logger.info(
+        f'Uploaded to OSS at {today_peoples_daily.oss_merged_pdf_url}'
+    )
