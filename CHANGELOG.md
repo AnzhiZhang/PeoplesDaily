@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.1.1...v2.2.0) (2026-05-11)
+
+
+### Features
+
+* idempotent retries via per-day status.json ([8391c8f](https://github.com/AnzhiZhang/PeoplesDaily/commit/8391c8fb091bfd4ddf4f4fd6317e772fea4722eb))
+
 ## [2.1.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.1.0...v2.1.1) (2026-02-11)
 
 
