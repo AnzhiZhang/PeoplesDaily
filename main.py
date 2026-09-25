@@ -171,6 +171,7 @@ def main_cron(config: Config) -> None:
 def main():
     # load config
     config = load_config()
+    logger.set_debug(config.debug)
     log_config(config)
 
     # run

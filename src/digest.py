@@ -1,7 +1,9 @@
+from logging import Logger
+
 import requests
 from bs4 import BeautifulSoup
 from openai import OpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from .config import Config
 from .peoples_daily import Article, Page, TodayPeopleDaily
@@ -81,7 +83,15 @@ class DigestResult(BaseModel):
     commentary: list[Commentary] = []
 
 
-def chat_json(client: OpenAI, model: str, system: str, user: str) -> str:
+def chat_json[T: BaseModel](
+        client: OpenAI,
+        model: str,
+        system: str,
+        user: str,
+        schema: type[T],
+        logger: Logger,
+        task: str
+) -> T:
     response = client.chat.completions.create(
         model=model,
         messages=[
@@ -90,7 +100,21 @@ def chat_json(client: OpenAI, model: str, system: str, user: str) -> str:
         ],
         response_format={'type': 'json_object'},
     )
-    return response.choices[0].message.content
+    content = response.choices[0].message.content
+
+    # log usage
+    usage = response.usage
+    logger.debug(
+        f'Digest {task} tokens: prompt {usage.prompt_tokens}, '
+        f'completion {usage.completion_tokens}'
+    )
+
+    # validate, log raw response on failure
+    try:
+        return schema.model_validate_json(content)
+    except ValidationError:
+        logger.error(f'Digest {task} invalid response: {content}')
+        raise
 
 
 def index_articles(
@@ -107,7 +131,8 @@ def index_articles(
 def select_articles(
         client: OpenAI,
         model: str,
-        indexed: dict[int, tuple[Page, Article]]
+        indexed: dict[int, tuple[Page, Article]],
+        logger: Logger
 ) -> list[int]:
     # always read pages
     always = [
@@ -126,8 +151,9 @@ def select_articles(
             f'[{i}] {page.title} | {article.title}'
             for i, (page, article) in candidates.items()
         )
-        content = chat_json(client, model, SELECT_PROMPT, user)
-        selection = Selection.model_validate_json(content)
+        selection = chat_json(
+            client, model, SELECT_PROMPT, user, Selection, logger, 'select'
+        )
 
         # drop ids not in candidates
         selected = [i for i in selection.article_ids if i in candidates]
@@ -149,23 +175,33 @@ def fetch_article_content(url: str) -> str:
     return '\n'.join(p for p in paragraphs if p)
 
 
-def compress_article(client: OpenAI, model: str, content: str) -> str:
-    result = chat_json(client, model, COMPRESS_PROMPT, content)
-    return Compressed.model_validate_json(result).content
+def compress_article(
+        client: OpenAI,
+        model: str,
+        content: str,
+        logger: Logger
+) -> str:
+    compressed = chat_json(
+        client, model, COMPRESS_PROMPT, content, Compressed, logger, 'compress'
+    )
+    return compressed.content
 
 
 def summarize_articles(
         client: OpenAI,
         model: str,
         indexed: dict[int, tuple[Page, Article]],
-        contents: dict[int, str]
+        contents: dict[int, str],
+        logger: Logger
 ) -> DigestResult:
     user = '\n\n'.join(
         f'[{i}] {indexed[i][0].title} | {indexed[i][1].title}\n{content}'
         for i, content in contents.items()
     )
-    content = chat_json(client, model, SUMMARIZE_PROMPT, user)
-    result = DigestResult.model_validate_json(content)
+    result = chat_json(
+        client, model, SUMMARIZE_PROMPT, user, DigestResult, logger,
+        'summarize'
+    )
 
     # drop items referring to articles not provided
     for h in result.highlights:
@@ -202,17 +238,25 @@ def generate_digest(
 
     # select articles
     indexed = index_articles(today_peoples_daily)
-    selected = select_articles(client, model, indexed)
+    selected = select_articles(client, model, indexed, logger)
     logger.info(f'Digest selected {len(selected)}/{len(indexed)} articles')
+    for i in selected:
+        page, article = indexed[i]
+        logger.debug(f'  [{i}] {page.title} | {article.title}')
 
     # fetch contents
     contents = {}
     for i in selected:
         article = indexed[i][1]
         content = fetch_article_content(article.url)
+        logger.debug(f'Fetched {len(content)} chars: {article.title}')
         if len(content) > COMPRESS_THRESHOLD:
-            logger.info(f'Compressing {len(content)} chars: {article.title}')
-            content = compress_article(client, model, content)
+            compressed = compress_article(client, model, content, logger)
+            logger.info(
+                f'Compressed {len(content)} -> {len(compressed)} chars: '
+                f'{article.title}'
+            )
+            content = compressed
         if content:
             contents[i] = content
         else:
@@ -221,7 +265,7 @@ def generate_digest(
         raise ValueError('No article content fetched for digest')
 
     # summarize
-    result = summarize_articles(client, model, indexed, contents)
+    result = summarize_articles(client, model, indexed, contents, logger)
 
     # resolve ids to titles and urls
     today_peoples_daily.digest = {
