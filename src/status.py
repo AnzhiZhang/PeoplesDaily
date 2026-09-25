@@ -14,6 +14,7 @@ __all__ = [
 
 class Status(BaseModel):
     downloaded: bool = False
+    digest_generated: bool = False
     oss_uploaded: bool = False
     oss_url: Optional[str] = None
     email_sent: bool = False

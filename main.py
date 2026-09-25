@@ -8,6 +8,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from func_timeout import func_timeout, FunctionTimedOut
 
 from src.config import Config, load_config
+from src.digest import generate_digest
 from src.exceptions import NoPagesFoundError
 from src.logger import Logger
 from src.peoples_daily import TodayPeopleDaily
@@ -26,6 +27,12 @@ def write_multiline_output(fh, name, value):
 
 
 def log_config(config: Config) -> None:
+    # log digest config
+    if config.digest.enabled:
+        logger.info(f"Digest enabled, model: {config.digest.model}")
+    else:
+        logger.info("Digest disabled")
+
     # log oss config
     if config.oss.enabled:
         logger.info(f"OSS enabled")
@@ -78,6 +85,10 @@ def daily_task(
             f"Getting People's Daily for {today_peoples_daily.date_str}..."
         )
         func_timeout(60 * 10, today_peoples_daily.get_today_peoples_daily)
+
+        # generate digest
+        if config.digest.enabled:
+            generate_digest(config, today_peoples_daily)
 
         # upload to oss
         if config.oss.enabled:

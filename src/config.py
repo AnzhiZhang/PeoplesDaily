@@ -7,6 +7,13 @@ from pydantic import BaseModel, Field
 FILE_PATH = 'config/config.yaml'
 
 
+class DigestConfigSection(BaseModel):
+    enabled: bool = False
+    base_url: str = ''
+    api_key: str = ''
+    model: str = ''
+
+
 class OSSConfigSection(BaseModel):
     enabled: bool = False
     access_key_id: str = ''
@@ -42,6 +49,7 @@ class Config(BaseModel):
     cron_enabled: bool = False
     write_github_output: bool = False
 
+    digest: DigestConfigSection = Field(default_factory=DigestConfigSection)
     oss: OSSConfigSection = Field(default_factory=OSSConfigSection)
     email: EmailConfigSection = Field(default_factory=EmailConfigSection)
     telegram: TelegramConfigSection = Field(

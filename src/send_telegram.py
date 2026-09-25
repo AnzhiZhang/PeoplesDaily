@@ -91,10 +91,58 @@ def build_messages(daily: TodayPeopleDaily) -> list[str]:
     return chunks
 
 
+def build_highlight(highlight: dict) -> str:
+    # source links in parentheses after title
+    sources = highlight['sources']
+    if len(sources) == 1:
+        links = f"[原文]({sources[0]['url']})"
+    else:
+        links = " · ".join(
+            f"[原文 {n}]({s['url']})" for n, s in enumerate(sources, start=1)
+        )
+
+    blocks = [f"*{esc(highlight['title'])}* \\({links}\\)"]
+    blocks.extend(esc(p) for p in highlight['paragraphs'])
+
+    return "\n\n".join(blocks)
+
+
+def build_digest_message(daily: TodayPeopleDaily) -> str:
+    digest = daily.digest
+    header = f"*[{esc(daily.date_str)}]({daily.home_url}) — AI 摘要*"
+
+    # build sections as blocks
+    sections: list[tuple[str, list[str]]] = []
+    highlights = [build_highlight(h) for h in digest['highlights']]
+    sections.append(("*今日要点*", highlights))
+    commentary = [
+        f"*[{esc(c['title'])}]({c['url']})*\n{esc(c['point'])}"
+        for c in digest['commentary']
+    ]
+    if commentary:
+        sections.append(("*评论风向*", commentary))
+
+    # append blocks until message length limit
+    text = header
+    for title, items in sections:
+        candidate = f"{text}\n\n{title}"
+        added = False
+        for item in items:
+            if len(candidate) + len(item) + 2 > MAX_MESSAGE_LEN:
+                break
+            candidate += f"\n\n{item}"
+            added = True
+        if not added:
+            break
+        text = candidate
+
+    return text
+
+
 async def wait_for_forward(
         app: Application,
         discussion_chat_id: int,
-        not_before_ts: float,
+        channel_message_id: int,
         timeout: float = 12.0,
 ) -> int:
     """Wait for channel message to be auto-forwarded to discussion group."""
@@ -111,11 +159,12 @@ async def wait_for_forward(
             if not msg or msg.chat.id != discussion_chat_id:
                 continue
 
-            msg_ts = getattr(msg, "date", None)
-            if msg_ts is not None and msg_ts.timestamp() < not_before_ts:
-                continue
-
-            if getattr(msg, "is_automatic_forward", False):
+            # match the forward of exactly this channel message
+            origin = getattr(msg, "forward_origin", None)
+            if (
+                    getattr(msg, "is_automatic_forward", False)
+                    and getattr(origin, "message_id", None) == channel_message_id
+            ):
                 return msg.message_id
 
         await asyncio.sleep(0.4)
@@ -125,6 +174,7 @@ async def wait_for_forward(
 
 async def send_messages(
         chunks: list[str],
+        digest_text: str | None,
         pdf_path: Path,
         token: str,
         channel_id: int,
@@ -145,7 +195,7 @@ async def send_messages(
 
         # wait for auto-forward to discussion group
         forward_id = await wait_for_forward(
-            app, discussion_chat_id, channel_msg.date.timestamp()
+            app, discussion_chat_id, channel_msg.message_id
         )
 
         # send replies to discussion group
@@ -166,6 +216,15 @@ async def send_messages(
         #         reply_to_message_id=forward_id,
         #     )
 
+        # send digest to channel
+        if digest_text is not None:
+            await app.bot.send_message(
+                chat_id=channel_id,
+                text=digest_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                disable_web_page_preview=True,
+            )
+
 
 def send_telegram(
         config: Config,
@@ -184,8 +243,12 @@ def send_telegram(
 
     # build and send messages
     chunks = build_messages(today_peoples_daily)
+    digest_text = None
+    if today_peoples_daily.digest is not None:
+        digest_text = build_digest_message(today_peoples_daily)
     asyncio.run(send_messages(
         chunks,
+        digest_text,
         pdf_path,
         config.telegram.bot_token,
         config.telegram.channel_id,

@@ -29,6 +29,11 @@ python main.py 2021-01-01
 ```yaml
 cron_enabled: false
 write_github_output: false
+digest:
+  enabled: false
+  base_url: ''
+  api_key: ''
+  model: ''
 oss:
   enabled: false
   access_key_id: ''
@@ -57,6 +62,10 @@ email:
 | --- | --- |
 | cron_enabled | 是否启用定时任务模式 |
 | write_github_output | 是否将数据写入 GitHub 仓库 |
+| digest.enabled | 是否启用 AI 每日摘要 |
+| digest.base_url | OpenAI 兼容接口地址，如 `https://api.deepseek.com` |
+| digest.api_key | 接口密钥 |
+| digest.model | 模型名称，如 `deepseek-chat` |
 | oss.enabled | 是否启用 OSS 上传 |
 | oss.access_key_id | OSS Access Key ID |
 | oss.access_key_secret | OSS Access Key Secret |

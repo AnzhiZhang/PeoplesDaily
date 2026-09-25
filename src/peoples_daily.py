@@ -171,6 +171,7 @@ class TodayPeopleDaily:
 
         self.page_count = None
         self.summary = None
+        self.digest: dict | None = None
         self.pages: list['Page'] = []
 
         self.oss_merged_pdf_url = None
@@ -215,6 +216,7 @@ class TodayPeopleDaily:
             'merged_pdf_path': self.merged_pdf_path,
             'page_count': str(self.page_count),
             'summary': self.summary,
+            'digest': self.digest,
             'pages': {p.page: p.to_data() for p in self.pages},
         }
 
@@ -226,6 +228,7 @@ class TodayPeopleDaily:
                     data = json.load(f)
                 self.page_count = int(data['page_count'])
                 self.summary = data['summary']
+                self.digest = data.get('digest')
                 self.pages = [
                     Page.from_data(self, page_num, page_data)
                     for page_num, page_data in data['pages'].items()
@@ -289,8 +292,7 @@ class TodayPeopleDaily:
         pages_zip.close()
         merged_pdf.write(self.merged_pdf_path)
         merged_pdf.close()
-        with open(self.data_json_path, 'w', encoding='utf-8') as f:
-            json.dump(self.data, f, indent=4, ensure_ascii=False)
+        self.save_data()
 
         # clean pages pdf
         for page in self.pages:
@@ -305,6 +307,10 @@ class TodayPeopleDaily:
 
     def set_oss_url(self, url: str):
         self.oss_merged_pdf_url = url
+
+    def save_data(self):
+        with open(self.data_json_path, 'w', encoding='utf-8') as f:
+            json.dump(self.data, f, indent=4, ensure_ascii=False)
 
     def save_status(self):
         save_status(self.status, self.status_json_path)
