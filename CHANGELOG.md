@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.2.0...v2.3.0) (2026-09-25)
+
+
+### Features
+
+* add AI daily digest ([ff847f4](https://github.com/AnzhiZhang/PeoplesDaily/commit/ff847f4818a0133b4de1ea52ce61dfcb8f4cc34e))
+* add debug logging option ([6045b81](https://github.com/AnzhiZhang/PeoplesDaily/commit/6045b8184747d5b9702b490c15b009d298b46dc6))
+
 ## [2.2.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.1.1...v2.2.0) (2026-05-11)
 
 
