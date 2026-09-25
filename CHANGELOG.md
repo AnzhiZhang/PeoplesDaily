@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.3.0...v2.3.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* use pipe separator in digest header ([402a74d](https://github.com/AnzhiZhang/PeoplesDaily/commit/402a74dcd99f0775f2a0db2baf31d9da5bc7bc01))
+
 ## [2.3.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.2.0...v2.3.0) (2026-09-25)
 
 
