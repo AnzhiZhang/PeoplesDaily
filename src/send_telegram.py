@@ -109,7 +109,7 @@ def build_highlight(highlight: dict) -> str:
 
 def build_digest_message(daily: TodayPeopleDaily) -> str:
     digest = daily.digest
-    header = f"*[{esc(daily.date_str)}]({daily.home_url}) — AI 摘要*"
+    header = f"*[{esc(daily.date_str)}]({daily.home_url}) \\| AI 摘要*"
 
     # build sections as blocks
     sections: list[tuple[str, list[str]]] = []
