@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 from logging import Logger
 from typing import Optional
 
@@ -19,6 +20,11 @@ class Status(BaseModel):
     oss_url: Optional[str] = None
     email_sent: bool = False
     telegram_sent: bool = False
+    telegram_digest_sent: bool = False
+
+
+# save status lock
+_save_lock = threading.Lock()
 
 
 def load_status(path: str, logger: Optional[Logger] = None) -> Status:
@@ -39,6 +45,7 @@ def load_status(path: str, logger: Optional[Logger] = None) -> Status:
 
 def save_status(status: Status, path: str) -> None:
     tmp_path = f'{path}.tmp'
-    with open(tmp_path, 'w', encoding='utf-8') as f:
-        json.dump(status.model_dump(), f, indent=4, ensure_ascii=False)
-    os.replace(tmp_path, path)
+    with _save_lock:
+        with open(tmp_path, 'w', encoding='utf-8') as f:
+            json.dump(status.model_dump(), f, indent=4, ensure_ascii=False)
+        os.replace(tmp_path, path)

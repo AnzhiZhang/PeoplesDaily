@@ -13,7 +13,7 @@ from src.exceptions import NoPagesFoundError
 from src.logger import Logger
 from src.peoples_daily import TodayPeopleDaily
 from src.send_email import send_email
-from src.send_telegram import send_telegram
+from src.send_telegram import send_telegram_digest, send_telegram_toc
 from src.upload_to_oss import upload_to_oss
 
 logger = Logger("People's Daily")
@@ -58,25 +58,58 @@ def log_config(config: Config) -> None:
 def daily_task(
         config: Config,
         date: datetime.date = None,
-        retry: bool = False
+        retry: bool = False,
+        wait_digest: bool = False
 ) -> TodayPeopleDaily | None:
+    # main chain and digest chain may both fail; schedule retry only once per run
+    retry_lock = threading.Lock()
+    retry_scheduled = False
+
+    # schedule retry
+    def schedule_retry() -> None:
+        # skip if already scheduled
+        nonlocal retry_scheduled
+        with retry_lock:
+            if retry_scheduled:
+                return
+            retry_scheduled = True
+
+        # start retry timer
+        logger.warning(f"retry in 30 minutes...")
+        thread = threading.Timer(
+            60 * 30,
+            daily_task,
+            args=(config,),
+            kwargs={'date': date, 'retry': retry}
+        )
+        thread.name = f"retry-{today_peoples_daily.date_str}"
+        thread.start()
+
     # retry
-    def retry_func() -> None:
+    def retry_func(e: BaseException) -> None:
         if retry:
-            logger.warning(f"retry in 30 minutes...")
-            thread = threading.Timer(
-                60 * 30,
-                daily_task,
-                args=(config,),
-                kwargs={'date': date, 'retry': retry}
-            )
-            thread.name = f"retry-{today_peoples_daily.date_str}"
-            thread.start()
+            schedule_retry()
         else:
             raise e
 
+    # digest task
+    def digest_task() -> None:
+        try:
+            # generate digest
+            generate_digest(config, today_peoples_daily)
+
+            # send telegram digest
+            if config.telegram.enabled:
+                send_telegram_digest(config, today_peoples_daily)
+        except Exception as e:
+            logger.exception("Digest task failed", exc_info=e)
+            # schedule a retry; without it just log and leave the main chain untouched
+            if retry:
+                schedule_retry()
+
     # init today peoples daily
     today_peoples_daily = TodayPeopleDaily(logger, date)
+    digest_thread = None
 
     # main task
     try:
@@ -86,9 +119,14 @@ def daily_task(
         )
         func_timeout(60 * 10, today_peoples_daily.get_today_peoples_daily)
 
-        # generate digest
+        # start digest thread
         if config.digest.enabled:
-            generate_digest(config, today_peoples_daily)
+            digest_thread = threading.Thread(
+                target=digest_task,
+                name=f"digest-{today_peoples_daily.date_str}",
+                daemon=True
+            )
+            digest_thread.start()
 
         # upload to oss
         if config.oss.enabled:
@@ -98,26 +136,30 @@ def daily_task(
         if config.email.enabled:
             send_email(config, today_peoples_daily)
 
-        # send telegram
+        # send telegram toc
         if config.telegram.enabled:
-            send_telegram(config, today_peoples_daily)
+            send_telegram_toc(config, today_peoples_daily)
 
         # return
         return today_peoples_daily
     except NoPagesFoundError as e:
         logger.warning(f"No pages found for {today_peoples_daily.date_str}")
-        return retry_func()
-    except FunctionTimedOut:
+        return retry_func(e)
+    except FunctionTimedOut as e:
         logger.warning(f"Timed out for {today_peoples_daily.date_str}")
-        return retry_func()
+        return retry_func(e)
     except Exception as e:
         logger.exception("Unknown error occurred", exc_info=e)
-        return retry_func()
+        return retry_func(e)
+    finally:
+        # wait for digest thread
+        if wait_digest and digest_thread is not None:
+            digest_thread.join()
 
 
 def main_once(config: Config, date: datetime.date) -> None:
     # run task
-    today_peoples_daily = daily_task(config, date)
+    today_peoples_daily = daily_task(config, date, wait_digest=True)
 
     # set output
     # DEPRECATED: GitHub Actions output is deprecated, will be removed in the future.
