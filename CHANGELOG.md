@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.3.1...v2.4.0) (2026-10-06)
+
+
+### Features
+
+* run digest generation and telegram digest asynchronously ([ef9b37c](https://github.com/AnzhiZhang/PeoplesDaily/commit/ef9b37c39ac733ae66c2868fefd687dd94713e0b))
+
 ## [2.3.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.3.0...v2.3.1) (2026-09-25)
 
 
