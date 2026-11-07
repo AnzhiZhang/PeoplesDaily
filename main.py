@@ -1,6 +1,4 @@
-import os
 import sys
-import uuid
 import datetime
 import threading
 
@@ -17,13 +15,6 @@ from src.send_telegram import send_telegram_digest, send_telegram_toc
 from src.upload_to_oss import upload_to_oss
 
 logger = Logger("People's Daily")
-
-
-def write_multiline_output(fh, name, value):
-    delimiter = uuid.uuid4()
-    print(f'{name}<<{delimiter}', file=fh)
-    print(value, file=fh)
-    print(delimiter, file=fh)
 
 
 def log_config(config: Config) -> None:
@@ -159,19 +150,7 @@ def daily_task(
 
 def main_once(config: Config, date: datetime.date) -> None:
     # run task
-    today_peoples_daily = daily_task(config, date, wait_digest=True)
-
-    # set output
-    # DEPRECATED: GitHub Actions output is deprecated, will be removed in the future.
-    if config.write_github_output:
-        with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
-            for name, value in today_peoples_daily.data.items():
-                if not isinstance(value, str):
-                    continue
-                if '\n' in value:
-                    write_multiline_output(fh, name, value)
-                else:
-                    print(f'{name}={value}', file=fh)
+    daily_task(config, date, wait_digest=True)
 
 
 def main_cron(config: Config) -> None:

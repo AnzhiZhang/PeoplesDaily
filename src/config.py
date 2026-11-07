@@ -47,7 +47,6 @@ class TelegramConfigSection(BaseModel):
 
 class Config(BaseModel):
     cron_enabled: bool = False
-    write_github_output: bool = False
     debug: bool = False
 
     digest: DigestConfigSection = Field(default_factory=DigestConfigSection)

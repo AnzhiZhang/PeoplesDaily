@@ -28,7 +28,6 @@ python main.py 2021-01-01
 
 ```yaml
 cron_enabled: false
-write_github_output: false
 debug: false
 digest:
   enabled: false
@@ -62,7 +61,6 @@ email:
 | 参数 | 说明 |
 | --- | --- |
 | cron_enabled | 是否启用定时任务模式 |
-| write_github_output | 是否将每日数据写入 GitHub Actions 步骤输出（`$GITHUB_OUTPUT`），供后续步骤使用（已弃用） |
 | debug | 是否输出调试日志 |
 | digest.enabled | 是否启用 AI 每日摘要 |
 | digest.base_url | OpenAI 兼容接口地址，如 `https://api.deepseek.com` |
