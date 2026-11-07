@@ -19,8 +19,8 @@ jobs:
         id: release-please
         uses: googleapis/release-please-action@v4
         with:
-          config-file: .release-please/release-please-config.json
-          manifest-file: .release-please/.release-please-manifest.json
+          config-file: .github/release-please-config.json
+          manifest-file: .github/.release-please-manifest.json
 
   build:
     runs-on: ubuntu-latest
