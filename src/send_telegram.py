@@ -24,8 +24,8 @@ def build_header(daily: TodayPeopleDaily) -> str:
     date = datetime.date.fromisoformat(daily.data.date)
     weekday = '一二三四五六日'[date.weekday()]
     return (
-        f"*[{esc(daily.data.date)}]({daily.home_url}) · "
-        f"星期{weekday} · 今日{daily.data.page_count}版*"
+        f"*[{date:%Y年%m月%d日}]({daily.home_url}) 星期{weekday}｜"
+        f"今日{daily.data.page_count}版*"
     )
 
 

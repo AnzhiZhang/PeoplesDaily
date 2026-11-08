@@ -91,7 +91,7 @@ class XGenerationTests(unittest.TestCase):
         post = build_post('2026-11-07', 8, XDigest.model_validate(VALID))
         self.assertEqual(
             post,
-            '人民日报今日速读｜2026年11月07日 · 星期六 · 今日8版\n\n'
+            '人民日报今日速读\n2026年11月07日 星期六｜今日8版\n\n'
             + VALID['post']
         )
         self.assertLessEqual(weighted_length(post), 280)
@@ -368,7 +368,9 @@ class XPublishTests(unittest.TestCase):
 
             def publish(text, media_ids):
                 self.assertEqual(media_ids, ['101', '102'])
-                self.assertIn('人民日报今日速读｜2026年11月07日', text)
+                self.assertTrue(text.startswith(
+                    '人民日报今日速读\n2026年11月07日 星期六｜今日8版\n\n'
+                ))
                 return '12345'
 
             client.publish.side_effect = publish

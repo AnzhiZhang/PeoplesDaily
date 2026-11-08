@@ -53,8 +53,7 @@ class TelegramTests(unittest.TestCase):
         digest = build_digest_message(daily)
         self.assertEqual(
             digest.splitlines()[0],
-            '*[2026\\-11\\-08](https://paper.test/page) · '
-            '星期日 · 今日8版*',
+            '*[2026年11月08日](https://paper.test/page) 星期日｜今日8版*',
         )
         self.assertNotIn('AI 摘要', digest)
         self.assertIn('摘要正文。', digest)

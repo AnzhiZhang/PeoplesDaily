@@ -180,11 +180,11 @@ class XDigest(PlainTextModel):
 def build_post(date: str, page_count: int, digest: XDigest) -> str:
     issue_date = datetime.date.fromisoformat(date)
     weekday = '一二三四五六日'[issue_date.weekday()]
-    header = (
-        f'人民日报今日速读｜{issue_date:%Y年%m月%d日} · '
-        f'星期{weekday} · 今日{page_count}版'
+    text = (
+        '人民日报今日速读\n'
+        f'{issue_date:%Y年%m月%d日} 星期{weekday}｜今日{page_count}版\n\n'
+        f'{digest.post}'
     )
-    text = f'{header}\n\n{digest.post}'
     if weighted_length(text) > 280:
         raise ValueError('X post exceeds 280 weighted characters')
     return text
@@ -376,41 +376,6 @@ class XDraw:
             )
             x += font.getlength(run)
 
-    def separated_text(self, xy, parts, font, fill, gap=10) -> None:
-        scaled_font = font.font_variant(size=font.size * IMAGE_SCALE)
-        bounds = []
-        for part in parts:
-            ink = scaled_font.getmask(part).getbbox()
-            left = scaled_font.getbbox(part)[0]
-            bounds.append((left + ink[0], left + ink[2]))
-        diameter = 3 * IMAGE_SCALE
-        gap *= IMAGE_SCALE
-        width = sum(right - left for left, right in bounds)
-        width += (diameter + 2 * gap) * (len(parts) - 1)
-        x, y = (coordinate * IMAGE_SCALE for coordinate in xy)
-        x -= width
-        reference = scaled_font.getmask('国').getbbox()
-        center = (
-            y + scaled_font.getbbox('国')[1] + (reference[1] + reference[3]) / 2
-        )
-        for index, (part, (left, right)) in enumerate(zip(parts, bounds)):
-            self.text(
-                ((x - left) / IMAGE_SCALE, y / IMAGE_SCALE), part, font, fill
-            )
-            x += right - left
-            if index < len(parts) - 1:
-                x += gap
-                self.draw.ellipse(
-                    (
-                        x,
-                        center - diameter / 2,
-                        x + diameter - 1,
-                        center + diameter / 2 - 1,
-                    ),
-                    fill=fill,
-                )
-                x += diameter + gap
-
     def line(self, xy, fill, width=1) -> None:
         self.draw.line(
             tuple(coordinate * IMAGE_SCALE for coordinate in xy),
@@ -505,13 +470,12 @@ class XCards:
         draw.rectangle((0, 0, WIDTH, 14), fill=RED)
         draw.text((74, 54), '人民日报', font=self.font(30, True), fill=RED)
         date = datetime.date.fromisoformat(self.daily.data.date)
-        date_parts = (
-            date.strftime('%Y年%m月%d日'),
-            '星期' + '一二三四五六日'[date.weekday()],
+        weekday = '一二三四五六日'[date.weekday()]
+        draw.text(
+            (1126, 57),
+            f'{date:%Y年%m月%d日} 星期{weekday}｜'
             f'今日{self.daily.data.page_count}版',
-        )
-        draw.separated_text(
-            (1126, 57), date_parts, font=self.font(25), fill=MUTED
+            font=self.font(25), fill=MUTED, anchor='ra'
         )
         draw.line((74, 116, 1126, 116), fill=RULE, width=2)
         draw.text((74, 156), title, font=self.font(68, True), fill=INK)
