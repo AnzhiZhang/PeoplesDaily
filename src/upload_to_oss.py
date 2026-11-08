@@ -55,14 +55,6 @@ def upload_to_oss(
         today_peoples_daily.merged_pdf_path
     )
 
-    bucket.put_object_from_file(
-        join_oss_key(
-            today_peoples_daily.data.date,
-            today_peoples_daily.data_json_name
-        ),
-        today_peoples_daily.data_json_path
-    )
-
     # set oss merged pdf url
     if config.oss.pretty_endpoint is not None:
         endpoint = config.oss.pretty_endpoint

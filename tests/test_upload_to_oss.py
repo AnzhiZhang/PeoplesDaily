@@ -16,8 +16,6 @@ class OSSUploadTests(unittest.TestCase):
             merged_pdf_path='/not-written/2026-11-07.pdf',
             pages_zip_name='2026-11-07.zip',
             merged_pdf_name='2026-11-07.pdf',
-            data_json_name='data.json',
-            data_json_path='/not-written/data.json',
             status=Status(downloaded=True),
             logger=MagicMock(),
         )
@@ -40,9 +38,6 @@ class OSSUploadTests(unittest.TestCase):
                     ),
                     call(
                         '2026/11/07/2026-11-07.pdf', self.daily.merged_pdf_path
-                    ),
-                    call(
-                        '2026/11/07/data.json', self.daily.data_json_path
                     ),
                 ],
             )
