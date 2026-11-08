@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.5.0...v2.5.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* unify date formatting across daily posts and cards ([9e0b8f8](https://github.com/AnzhiZhang/PeoplesDaily/commit/9e0b8f8c3fe83a23f0c96be34ac76dddb1138359))
+
 ## [2.5.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.4.0...v2.5.0) (2026-11-08)
 
 
