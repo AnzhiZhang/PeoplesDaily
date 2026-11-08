@@ -9,3 +9,4 @@ oss2
 markdown2
 python-telegram-bot
 openai
+PyMuPDF

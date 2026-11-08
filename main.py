@@ -13,6 +13,7 @@ from src.logger import Logger
 from src.peoples_daily import TodayPeopleDaily
 from src.send_email import send_email
 from src.send_telegram import send_telegram_digest, send_telegram_toc
+from src.send_x import send_x
 from src.upload_to_oss import upload_to_oss
 
 logger = Logger("People's Daily")
@@ -111,6 +112,12 @@ def daily_task(
             tasks.append(executor.submit(
                 run_after, send_telegram_digest, config, today_peoples_daily,
                 digest, telegram_toc
+            ))
+
+        # send x after digest generation
+        if config.x.enabled:
+            tasks.append(executor.submit(
+                run_after, send_x, config, today_peoples_daily, digest
             ))
 
         # wait for all tasks and propagate failures

@@ -46,6 +46,14 @@ class TelegramConfigSection(BaseModel):
     discussion_chat_id: int = 0
 
 
+class XConfigSection(BaseModel):
+    enabled: bool = False
+    username: str = ''
+    client_id: str = ''
+    client_secret: str = Field(default='', repr=False)
+    refresh_token: str = Field(default='', repr=False)
+
+
 class Config(BaseModel):
     cron_enabled: bool = False
     debug: bool = False
@@ -56,6 +64,7 @@ class Config(BaseModel):
     telegram: TelegramConfigSection = Field(
         default_factory=TelegramConfigSection
     )
+    x: XConfigSection = Field(default_factory=XConfigSection)
 
     @classmethod
     def load(cls, path: str | Path = FILE_PATH) -> 'Config':
@@ -101,6 +110,8 @@ class Config(BaseModel):
         # check digest dependencies
         if self.telegram.enabled and not self.digest.enabled:
             raise ValueError('Telegram requires digest.enabled to be true')
+        if self.x.enabled and not self.digest.enabled:
+            raise ValueError('X requires digest.enabled to be true')
 
     def log(self, logger: Logger) -> None:
         def log_enabled(name: str, enabled: bool) -> None:
@@ -123,3 +134,6 @@ class Config(BaseModel):
 
         # log telegram config
         log_enabled("Telegram", self.telegram.enabled)
+
+        # log x config
+        log_enabled("X", self.x.enabled)

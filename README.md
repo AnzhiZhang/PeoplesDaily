@@ -54,6 +54,12 @@ email:
   recipients: []
   with_attachment: false
   unsubscribe_address: null
+x:
+  enabled: false
+  username: ''
+  client_id: ''
+  client_secret: ''
+  refresh_token: ''
 ```
 
 配置说明如下：
@@ -84,6 +90,11 @@ email:
 | email.recipients | 接收者列表 |
 | email.with_attachment | 是否发送附件 |
 | email.unsubscribe_address | 接收退订邮件的地址 |
+| x.enabled | 是否启用 X 渠道；启用后生成素材并直接发布 |
+| x.username | 可选：指定预期账号用户名，防止凭据指向其他账号 |
+| x.client_id | OAuth 2.0 Client ID，用于刷新 Token |
+| x.client_secret | OAuth 2.0 Client Secret；Web App / Automated App / Bot 类型需要 |
+| x.refresh_token | OAuth 2.0 Refresh Token，用于长期自动运行 |
 
 该模式下，可以通过标准输入使用以下命令：
 
