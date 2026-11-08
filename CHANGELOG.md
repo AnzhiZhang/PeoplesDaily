@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.5.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.4.0...v2.5.0) (2026-11-08)
+
+
+### Features
+
+* attach Telegram contents to digest discussion thread ([e598f60](https://github.com/AnzhiZhang/PeoplesDaily/commit/e598f604a96f2c7622f8b2cb35b5e009dfa79467))
+* publish daily reading cards to X ([9dda290](https://github.com/AnzhiZhang/PeoplesDaily/commit/9dda2908b4183cc2fcf71b069516bb0f784bff76))
+
 ## [2.4.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.3.1...v2.4.0) (2026-10-06)
 
 
