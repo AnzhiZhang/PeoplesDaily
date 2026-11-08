@@ -66,7 +66,7 @@ def send_email(
     server.login(config.email.smtp_user, config.email.smtp_password)
 
     # get date
-    date = datetime.datetime.strptime(today_peoples_daily.date_str, '%Y-%m-%d')
+    date = datetime.datetime.strptime(today_peoples_daily.data.date, '%Y-%m-%d')
 
     # construct email
     msg = MIMEMultipart()
@@ -82,15 +82,15 @@ def send_email(
     ).encode()
 
     # add oss paragraph
-    if today_peoples_daily.oss_merged_pdf_url is not None:
+    if today_peoples_daily.status.oss_url is not None:
         oss_paragraph = markdown2.markdown(
-            f'[在线阅读 PDF]({today_peoples_daily.oss_merged_pdf_url})'
+            f'[在线阅读 PDF]({today_peoples_daily.status.oss_url})'
         )
         msg.attach(MIMEText(oss_paragraph, 'html', 'utf-8'))
 
     # add table of contents
     msg.attach(MIMEText(
-        markdown2.markdown(today_peoples_daily.summary),
+        markdown2.markdown(today_peoples_daily.data.summary),
         'html',
         'utf-8'
     ))
@@ -135,9 +135,8 @@ def send_email(
     # quit server
     server.quit()
 
-    # persist status
+    # update status
     today_peoples_daily.status.email_sent = True
-    today_peoples_daily.save_status()
 
     # log
     today_peoples_daily.logger.info(f'Sent email to {config.email.recipients}')

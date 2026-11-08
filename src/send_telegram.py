@@ -23,7 +23,7 @@ def esc(text: str) -> str:
 
 
 def build_header(daily: TodayPeopleDaily) -> str:
-    return f"*[{esc(daily.date_str)}]({daily.home_url})*\n\n今日 {daily.page_count} 版"
+    return f"*[{esc(daily.data.date)}]({daily.home_url})*\n\n今日 {daily.data.page_count} 版"
 
 
 def build_page_section(page: Page) -> str:
@@ -109,16 +109,16 @@ def build_highlight(highlight: dict) -> str:
 
 
 def build_digest_message(daily: TodayPeopleDaily) -> str:
-    digest = daily.digest
-    header = f"*[{esc(daily.date_str)}]({daily.home_url}) \\| AI 摘要*"
+    digest = daily.data.digest
+    header = f"*[{esc(daily.data.date)}]({daily.home_url}) \\| AI 摘要*"
 
     # build sections as blocks
     sections: list[tuple[str, list[str]]] = []
-    highlights = [build_highlight(h) for h in digest['highlights']]
+    highlights = [build_highlight(h) for h in digest.highlights]
     sections.append(("*今日要点*", highlights))
     commentary = [
         f"*[{esc(c['title'])}]({c['url']})*\n{esc(c['point'])}"
-        for c in digest['commentary']
+        for c in digest.commentary
     ]
     if commentary:
         sections.append(("*评论风向*", commentary))
@@ -260,9 +260,8 @@ def send_telegram_toc(
         config.telegram.discussion_chat_id,
     ))
 
-    # persist status
+    # update status
     today_peoples_daily.status.telegram_sent = True
-    today_peoples_daily.save_status()
 
     # log
     today_peoples_daily.logger.info('Sent toc to Telegram')
@@ -280,7 +279,7 @@ def send_telegram_digest(
         return
 
     # skip if no digest
-    if today_peoples_daily.digest is None:
+    if today_peoples_daily.data.digest is None:
         today_peoples_daily.logger.info(
             'Telegram digest send skipped (no digest)'
         )
@@ -294,9 +293,8 @@ def send_telegram_digest(
         config.telegram.channel_id,
     ))
 
-    # persist status
+    # update status
     today_peoples_daily.status.telegram_digest_sent = True
-    today_peoples_daily.save_status()
 
     # log
     today_peoples_daily.logger.info('Sent digest to Telegram')

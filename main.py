@@ -1,6 +1,7 @@
 import sys
 import datetime
 import threading
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from func_timeout import func_timeout, FunctionTimedOut
@@ -15,15 +16,28 @@ from src.send_telegram import send_telegram_digest, send_telegram_toc
 from src.upload_to_oss import upload_to_oss
 
 logger = Logger("People's Daily")
+executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="peoplesdaily")
+
+
+def run_after(
+        task,
+        config: Config,
+        today_peoples_daily: TodayPeopleDaily,
+        *dependencies: Future | None
+):
+    # propagate dependency failures before running the task
+    for dependency in dependencies:
+        if dependency is not None:
+            dependency.result()
+    return task(config, today_peoples_daily)
 
 
 def daily_task(
         config: Config,
         date: datetime.date = None,
-        retry: bool = False,
-        wait_digest: bool = False
+        retry: bool = False
 ) -> TodayPeopleDaily | None:
-    # main chain and digest chain may both fail; schedule retry only once per run
+    # schedule retry only once per run
     retry_lock = threading.Lock()
     retry_scheduled = False
 
@@ -44,7 +58,7 @@ def daily_task(
             args=(config,),
             kwargs={'date': date, 'retry': retry}
         )
-        thread.name = f"retry-{today_peoples_daily.date_str}"
+        thread.name = f"retry-{today_peoples_daily.data.date}"
         thread.start()
 
     # retry
@@ -54,74 +68,77 @@ def daily_task(
         else:
             raise e
 
-    # digest task
-    def digest_task() -> None:
-        try:
-            # generate digest
-            generate_digest(config, today_peoples_daily)
-
-            # send telegram digest
-            if config.telegram.enabled:
-                send_telegram_digest(config, today_peoples_daily)
-        except Exception as e:
-            logger.exception("Digest task failed", exc_info=e)
-            # schedule a retry; without it just log and leave the main chain untouched
-            if retry:
-                schedule_retry()
-
     # init today peoples daily
     today_peoples_daily = TodayPeopleDaily(logger, date)
-    digest_thread = None
+    tasks = []
+    digest = None
+    oss = None
+    telegram_toc = None
 
     # main task
     try:
         # get today peoples daily
         logger.info(
-            f"Getting People's Daily for {today_peoples_daily.date_str}..."
+            f"Getting People's Daily for {today_peoples_daily.data.date}..."
         )
         func_timeout(60 * 10, today_peoples_daily.get_today_peoples_daily)
 
-        # start digest thread
+        # generate digest
         if config.digest.enabled:
-            digest_thread = threading.Thread(
-                target=digest_task,
-                name=f"digest-{today_peoples_daily.date_str}",
-                daemon=True
-            )
-            digest_thread.start()
+            digest = executor.submit(generate_digest, config, today_peoples_daily)
+            tasks.append(digest)
 
         # upload to oss
         if config.oss.enabled:
-            upload_to_oss(config, today_peoples_daily)
-
-        # send email
-        if config.email.enabled:
-            send_email(config, today_peoples_daily)
+            oss = executor.submit(upload_to_oss, config, today_peoples_daily)
+            tasks.append(oss)
 
         # send telegram toc
         if config.telegram.enabled:
-            send_telegram_toc(config, today_peoples_daily)
+            telegram_toc = executor.submit(
+                send_telegram_toc, config, today_peoples_daily
+            )
+            tasks.append(telegram_toc)
+
+        # send email after oss upload
+        if config.email.enabled:
+            tasks.append(executor.submit(
+                run_after, send_email, config, today_peoples_daily, oss
+            ))
+
+        # send telegram digest after digest generation and toc
+        if config.telegram.enabled:
+            tasks.append(executor.submit(
+                run_after, send_telegram_digest, config, today_peoples_daily,
+                digest, telegram_toc
+            ))
+
+        # wait for all tasks and propagate failures
+        wait(tasks)
+        for task in tasks:
+            task.result()
 
         # return
         return today_peoples_daily
     except NoPagesFoundError as e:
-        logger.warning(f"No pages found for {today_peoples_daily.date_str}")
+        logger.warning(f"No pages found for {today_peoples_daily.data.date}")
         return retry_func(e)
     except FunctionTimedOut as e:
-        logger.warning(f"Timed out for {today_peoples_daily.date_str}")
+        logger.warning(f"Timed out for {today_peoples_daily.data.date}")
         return retry_func(e)
     except Exception as e:
         logger.exception("Unknown error occurred", exc_info=e)
         return retry_func(e)
     finally:
-        # wait for digest thread
-        if wait_digest and digest_thread is not None:
-            digest_thread.join()
+        # save progress after all workers finish, including failed runs
+        wait(tasks)
+        if today_peoples_daily.status.downloaded:
+            today_peoples_daily.save()
 
 
 def main_once(config: Config, date: datetime.date) -> None:
     # run task
-    daily_task(config, date, wait_digest=True)
+    daily_task(config, date)
 
 
 def main_cron(config: Config) -> None:

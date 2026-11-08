@@ -6,6 +6,7 @@ from openai import OpenAI
 from pydantic import BaseModel, ValidationError
 
 from .config import Config
+from .data import DigestDataSection
 from .peoples_daily import Article, Page, TodayPeopleDaily
 
 __all__ = [
@@ -223,7 +224,7 @@ def generate_digest(
     # skip if already generated
     if (
             today_peoples_daily.status.digest_generated
-            and today_peoples_daily.digest is not None
+            and today_peoples_daily.data.digest is not None
     ):
         logger.info('Digest skipped (already done)')
         return
@@ -268,7 +269,7 @@ def generate_digest(
     result = summarize_articles(client, model, indexed, contents, logger)
 
     # resolve ids to titles and urls
-    today_peoples_daily.digest = {
+    today_peoples_daily.data.digest = DigestDataSection.model_validate({
         'highlights': [
             {
                 'title': h.title,
@@ -291,12 +292,10 @@ def generate_digest(
             }
             for c in result.commentary
         ],
-    }
+    })
 
-    # persist data and status
-    today_peoples_daily.save_data()
+    # update status
     today_peoples_daily.status.digest_generated = True
-    today_peoples_daily.save_status()
 
     # log
     logger.info(

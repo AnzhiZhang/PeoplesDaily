@@ -10,8 +10,9 @@ import requests
 from bs4 import BeautifulSoup
 from pypdf import PdfWriter
 
+from .data import Data
 from .exceptions import NoPagesFoundError
-from .status import Status, load_status, save_status
+from .status import Status
 
 __all__ = [
     'Article',
@@ -155,7 +156,6 @@ class TodayPeopleDaily:
         self.year = str(date.year).zfill(4)
         self.month = str(date.month).zfill(2)
         self.day = str(date.day).zfill(2)
-        self.date_str = '-'.join([self.year, self.month, self.day])
 
         self.dir_path = None
         self.pages_zip_name = None
@@ -169,23 +169,20 @@ class TodayPeopleDaily:
 
         self.home_url = None
 
-        self.page_count = None
-        self.summary = None
-        self.digest: dict | None = None
         self.pages: list['Page'] = []
 
-        self.oss_merged_pdf_url = None
-
+        self.data: Data | None = None
         self.status: Status | None = None
 
         self.init()
 
     def init(self):
         # path
+        date_str = self.date.isoformat()
         self.dir_path = os.path.join(DATA_DIR, self.year, self.month, self.day)
-        self.pages_zip_name = f'{self.date_str}.zip'
+        self.pages_zip_name = f'{date_str}.zip'
         self.pages_zip_path = os.path.join(self.dir_path, self.pages_zip_name)
-        self.merged_pdf_name = f'{self.date_str}.pdf'
+        self.merged_pdf_name = f'{date_str}.pdf'
         self.merged_pdf_path = os.path.join(
             self.dir_path,
             self.merged_pdf_name
@@ -197,6 +194,7 @@ class TodayPeopleDaily:
             self.dir_path,
             self.status_json_name
         )
+        self.data = Data(date=date_str)
 
         # home url
         self.home_url = get_page_html_url(self, '01')
@@ -206,62 +204,41 @@ class TodayPeopleDaily:
             os.makedirs(self.dir_path)
 
         # load status (fresh Status if file missing or corrupt)
-        self.status = load_status(self.status_json_path, self.logger)
-
-    @property
-    def data(self):
-        return {
-            'date': self.date_str,
-            'pages_zip_path': self.pages_zip_path,
-            'merged_pdf_path': self.merged_pdf_path,
-            'page_count': str(self.page_count),
-            'summary': self.summary,
-            'digest': self.digest,
-            'pages': {p.page: p.to_data() for p in self.pages},
-        }
+        self.status = Status.load(self.status_json_path, self.logger)
 
     def get_today_peoples_daily(self):
         # restore from disk if download phase already completed
         if self.status.downloaded:
             try:
-                with open(self.data_json_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                self.page_count = int(data['page_count'])
-                self.summary = data['summary']
-                self.digest = data.get('digest')
+                self.data = Data.load(self.data_json_path)
                 self.pages = [
                     Page.from_data(self, page_num, page_data)
-                    for page_num, page_data in data['pages'].items()
+                    for page_num, page_data in self.data.pages.items()
                 ]
                 self.logger.info(
                     f'Download skipped (already done), '
-                    f'restored {self.page_count} pages from disk'
+                    f'restored {self.data.page_count} pages from disk'
                 )
                 return
             except (json.JSONDecodeError, OSError, KeyError, ValueError) as e:
+                self.status.downloaded = False
                 self.logger.warning(
                     f'Failed to restore from {self.data_json_path}, '
                     f'falling through to full download: {e}'
                 )
 
         # get page count
-        self.page_count = requests.get(self.home_url).text.count('pageLink')
+        self.data.page_count = requests.get(self.home_url).text.count('pageLink')
 
         # check page count
-        if self.page_count == 0:
+        if self.data.page_count == 0:
             raise NoPagesFoundError('No pages found')
         else:
-            self.logger.info(f'今日 {self.page_count} 版')
-
-        # summary
-        self.summary = (
-            f'# [{self.date_str}]({self.home_url})'
-            f'\n\n今日 {self.page_count} 版'
-        )
+            self.logger.info(f'今日 {self.data.page_count} 版')
 
         # download pages
         self.pages = []
-        for i in range(self.page_count):
+        for i in range(self.data.page_count):
             page_number = str(i + 1).zfill(2)
             self.pages.append(Page(self, page_number))
 
@@ -280,11 +257,6 @@ class TodayPeopleDaily:
             # merged pdf
             merged_pdf.append(page.path, page.title)
 
-            # summary
-            self.summary += f'\n\n## [{page.title}]({page.html_url})\n'
-            for article in page.articles:
-                self.summary += f'\n- [{article.title}]({article.url})'
-
             # log
             self.logger.info(f'{self.date}: added "{page.title}" into pages')
 
@@ -292,25 +264,20 @@ class TodayPeopleDaily:
         pages_zip.close()
         merged_pdf.write(self.merged_pdf_path)
         merged_pdf.close()
-        self.save_data()
 
         # clean pages pdf
         for page in self.pages:
             os.remove(page.path)
 
+        # update data
+        self.data.pages = {page.page: page.to_data() for page in self.pages}
+
         # mark download phase done
         self.status.downloaded = True
-        self.save_status()
 
         # log
-        self.logger.info(f"Got People's Daily for {self.date_str}")
+        self.logger.info(f"Got People's Daily for {self.data.date}")
 
-    def set_oss_url(self, url: str):
-        self.oss_merged_pdf_url = url
-
-    def save_data(self):
-        with open(self.data_json_path, 'w', encoding='utf-8') as f:
-            json.dump(self.data, f, indent=4, ensure_ascii=False)
-
-    def save_status(self):
-        save_status(self.status, self.status_json_path)
+    def save(self):
+        self.data.save(self.data_json_path)
+        self.status.save(self.status_json_path)
