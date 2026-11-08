@@ -12,7 +12,7 @@ from src.exceptions import NoPagesFoundError
 from src.logger import Logger
 from src.peoples_daily import TodayPeopleDaily
 from src.send_email import send_email
-from src.send_telegram import send_telegram_digest, send_telegram_toc
+from src.send_telegram import send_telegram
 from src.send_x import send_x
 from src.upload_to_oss import upload_to_oss
 
@@ -74,7 +74,6 @@ def daily_task(
     tasks = []
     digest = None
     oss = None
-    telegram_toc = None
 
     # main task
     try:
@@ -86,7 +85,9 @@ def daily_task(
 
         # generate digest
         if config.digest.enabled:
-            digest = executor.submit(generate_digest, config, today_peoples_daily)
+            digest = executor.submit(
+                generate_digest, config, today_peoples_daily
+            )
             tasks.append(digest)
 
         # upload to oss
@@ -94,24 +95,16 @@ def daily_task(
             oss = executor.submit(upload_to_oss, config, today_peoples_daily)
             tasks.append(oss)
 
-        # send telegram toc
-        if config.telegram.enabled:
-            telegram_toc = executor.submit(
-                send_telegram_toc, config, today_peoples_daily
-            )
-            tasks.append(telegram_toc)
-
         # send email after oss upload
         if config.email.enabled:
             tasks.append(executor.submit(
                 run_after, send_email, config, today_peoples_daily, oss
             ))
 
-        # send telegram digest after digest generation and toc
+        # send telegram after digest generation
         if config.telegram.enabled:
             tasks.append(executor.submit(
-                run_after, send_telegram_digest, config, today_peoples_daily,
-                digest, telegram_toc
+                run_after, send_telegram, config, today_peoples_daily, digest
             ))
 
         # send x after digest generation

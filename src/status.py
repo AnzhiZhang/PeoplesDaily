@@ -17,7 +17,6 @@ class Status(BaseModel):
     oss_url: Optional[str] = None
     email_sent: bool = False
     telegram_sent: bool = False
-    telegram_digest_sent: bool = False
     x_post_id: Optional[str] = None
 
     @classmethod

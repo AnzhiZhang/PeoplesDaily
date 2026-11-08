@@ -1,8 +1,7 @@
 import asyncio
+import datetime
 import time
-from pathlib import Path
 
-from telegram import InputFile
 from telegram.constants import ParseMode
 from telegram.ext import Application
 from telegram.helpers import escape_markdown
@@ -11,8 +10,7 @@ from .config import Config
 from .peoples_daily import Page, TodayPeopleDaily
 
 __all__ = [
-    'send_telegram_toc',
-    'send_telegram_digest',
+    'send_telegram',
 ]
 
 MAX_MESSAGE_LEN = 3900
@@ -23,7 +21,12 @@ def esc(text: str) -> str:
 
 
 def build_header(daily: TodayPeopleDaily) -> str:
-    return f"*[{esc(daily.data.date)}]({daily.home_url})*\n\n今日 {daily.data.page_count} 版"
+    date = datetime.date.fromisoformat(daily.data.date)
+    weekday = '一二三四五六日'[date.weekday()]
+    return (
+        f"*[{esc(daily.data.date)}]({daily.home_url}) · "
+        f"星期{weekday} · 今日{daily.data.page_count}版*"
+    )
 
 
 def build_page_section(page: Page) -> str:
@@ -64,9 +67,7 @@ def split_message(text: str, max_len: int = MAX_MESSAGE_LEN) -> list[str]:
 
 
 def build_messages(daily: TodayPeopleDaily) -> list[str]:
-    sections = [build_header(daily)]
-    for page in daily.pages:
-        sections.append(build_page_section(page))
+    sections = [build_page_section(page) for page in daily.pages]
 
     # merge small sections
     merged: list[str] = []
@@ -110,7 +111,7 @@ def build_highlight(highlight: dict) -> str:
 
 def build_digest_message(daily: TodayPeopleDaily) -> str:
     digest = daily.data.digest
-    header = f"*[{esc(daily.data.date)}]({daily.home_url}) \\| AI 摘要*"
+    header = build_header(daily)
 
     # build sections as blocks
     sections: list[tuple[str, list[str]]] = []
@@ -163,8 +164,8 @@ async def wait_for_forward(
             # match the forward of exactly this channel message
             origin = getattr(msg, "forward_origin", None)
             if (
-                    getattr(msg, "is_automatic_forward", False)
-                    and getattr(origin, "message_id", None) == channel_message_id
+                getattr(msg, "is_automatic_forward", False)
+                and getattr(origin, "message_id", None) == channel_message_id
             ):
                 return msg.message_id
 
@@ -173,24 +174,21 @@ async def wait_for_forward(
     raise RuntimeError("Timeout waiting for auto-forward message")
 
 
-async def send_toc_messages(
+async def send_messages(
+        digest_text: str,
         chunks: list[str],
-        pdf_path: Path,
         token: str,
         channel_id: int,
-        discussion_chat_id: int,
+        discussion_chat_id: int
 ) -> None:
-    if not chunks:
-        return
-
     app = Application.builder().token(token).build()
     async with app:
-        # send main message to channel
+        # send digest to channel
         channel_msg = await app.bot.send_message(
             chat_id=channel_id,
-            text=chunks[0],
+            text=digest_text,
             parse_mode=ParseMode.MARKDOWN_V2,
-            disable_web_page_preview=True,
+            disable_web_page_preview=True
         )
 
         # wait for auto-forward to discussion group
@@ -198,103 +196,38 @@ async def send_toc_messages(
             app, discussion_chat_id, channel_msg.message_id
         )
 
-        # send replies to discussion group
-        for chunk in chunks[1:]:
+        # send full toc as replies to the digest
+        for chunk in chunks:
             await app.bot.send_message(
                 chat_id=discussion_chat_id,
                 text=chunk,
                 parse_mode=ParseMode.MARKDOWN_V2,
                 reply_to_message_id=forward_id,
-                disable_web_page_preview=True,
+                disable_web_page_preview=True
             )
 
-        # # send pdf to discussion group
-        # with pdf_path.open("rb") as f:
-        #     await app.bot.send_document(
-        #         chat_id=discussion_chat_id,
-        #         document=InputFile(f, filename=pdf_path.name),
-        #         reply_to_message_id=forward_id,
-        #     )
 
-
-async def send_digest_message(
-        digest_text: str,
-        token: str,
-        channel_id: int,
-) -> None:
-    app = Application.builder().token(token).build()
-    async with app:
-        # send digest to channel
-        await app.bot.send_message(
-            chat_id=channel_id,
-            text=digest_text,
-            parse_mode=ParseMode.MARKDOWN_V2,
-            disable_web_page_preview=True,
-        )
-
-
-def send_telegram_toc(
+def send_telegram(
         config: Config,
         today_peoples_daily: TodayPeopleDaily
 ) -> None:
     # skip if already sent
     if today_peoples_daily.status.telegram_sent:
         today_peoples_daily.logger.info(
-            'Telegram toc send skipped (already done)'
+            'Telegram send skipped (already done)'
         )
         return
 
-    # check pdf exists
-    pdf_path = Path(today_peoples_daily.merged_pdf_path)
-    if not pdf_path.exists():
-        today_peoples_daily.logger.warning(f"PDF not found: {pdf_path}")
-        return
-
-    # build and send messages
+    # build and send digest with toc replies
+    digest_text = build_digest_message(today_peoples_daily)
     chunks = build_messages(today_peoples_daily)
-    asyncio.run(send_toc_messages(
-        chunks,
-        pdf_path,
-        config.telegram.bot_token,
-        config.telegram.channel_id,
-        config.telegram.discussion_chat_id,
+    asyncio.run(send_messages(
+        digest_text, chunks, config.telegram.bot_token,
+        config.telegram.channel_id, config.telegram.discussion_chat_id
     ))
 
     # update status
     today_peoples_daily.status.telegram_sent = True
 
     # log
-    today_peoples_daily.logger.info('Sent toc to Telegram')
-
-
-def send_telegram_digest(
-        config: Config,
-        today_peoples_daily: TodayPeopleDaily
-) -> None:
-    # skip if already sent
-    if today_peoples_daily.status.telegram_digest_sent:
-        today_peoples_daily.logger.info(
-            'Telegram digest send skipped (already done)'
-        )
-        return
-
-    # skip if no digest
-    if today_peoples_daily.data.digest is None:
-        today_peoples_daily.logger.info(
-            'Telegram digest send skipped (no digest)'
-        )
-        return
-
-    # build and send digest message
-    digest_text = build_digest_message(today_peoples_daily)
-    asyncio.run(send_digest_message(
-        digest_text,
-        config.telegram.bot_token,
-        config.telegram.channel_id,
-    ))
-
-    # update status
-    today_peoples_daily.status.telegram_digest_sent = True
-
-    # log
-    today_peoples_daily.logger.info('Sent digest to Telegram')
+    today_peoples_daily.logger.info('Sent to Telegram')

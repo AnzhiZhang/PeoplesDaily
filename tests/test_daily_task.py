@@ -66,8 +66,7 @@ class DailyTaskTests(unittest.TestCase):
                 generate_digest=action('digest'),
                 upload_to_oss=action('oss'),
                 send_email=action('email'),
-                send_telegram_toc=action('telegram_toc'),
-                send_telegram_digest=action('telegram_digest'),
+                send_telegram=action('telegram'),
                 send_x=action('x'),
                 func_timeout=lambda timeout, function: function(),
             ),
@@ -86,9 +85,8 @@ class DailyTaskTests(unittest.TestCase):
             [
                 'oss',
                 'email',
-                'telegram_toc',
                 'digest',
-                'telegram_digest',
+                'telegram',
                 'x',
                 'save',
             ],
@@ -96,8 +94,7 @@ class DailyTaskTests(unittest.TestCase):
         self.assertEqual(events[-1], 'save')
         for before, after in (
             ('oss', 'email'),
-            ('digest', 'telegram_digest'),
-            ('telegram_toc', 'telegram_digest'),
+            ('digest', 'telegram'),
             ('digest', 'x'),
         ):
             self.assertLess(events.index(before), events.index(after))
@@ -107,8 +104,7 @@ class DailyTaskTests(unittest.TestCase):
             'digest',
             'oss',
             'email',
-            'telegram_toc',
-            'telegram_digest',
+            'telegram',
             'x',
             'save',
         ):
@@ -118,7 +114,7 @@ class DailyTaskTests(unittest.TestCase):
                 self.assertEqual(events.count('save'), 1)
                 if name == 'digest':
                     self.assertNotIn('x', events)
-                    self.assertNotIn('telegram_digest', events)
+                    self.assertNotIn('telegram', events)
                 if name == 'oss':
                     self.assertNotIn('email', events)
 
