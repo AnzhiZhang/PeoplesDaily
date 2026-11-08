@@ -1,3 +1,4 @@
+from logging import Logger
 from pathlib import Path
 from typing import List, Optional
 
@@ -56,46 +57,69 @@ class Config(BaseModel):
         default_factory=TelegramConfigSection
     )
 
+    @classmethod
+    def load(cls, path: str | Path = FILE_PATH) -> 'Config':
+        # file path
+        path = Path(path)
 
-def save_config(config: Config, path: Path) -> None:
-    """
-    Save config to the config file.
-    """
-    path.write_text(
-        yaml.safe_dump(
-            config.model_dump(),
-            sort_keys=False,
-            allow_unicode=True
-        ),
-        encoding='utf-8'
-    )
+        # create default config if not exists
+        if not path.exists():
+            config = cls()
+            config.save(path)
+            return config
 
+        # load config
+        data = yaml.safe_load(path.read_text('utf-8')) or {}
+        config = cls.model_validate(data)
+        config.validate()
 
-def load_config() -> Config:
-    """
-    Load config from the config file.
-    :return: Config.
-    """
-    # file path
-    path = Path(FILE_PATH)
+        # write back if config file is missing any fields
+        if data != config.model_dump():
+            config.save(path)
 
-    # create config dir if not exists
-    if not path.parent.exists():
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-    # create default config if not exists
-    if not path.exists():
-        config = Config()
-        save_config(config, path)
+        # return
         return config
 
-    # load config
-    data = yaml.safe_load(path.read_text('utf-8')) or {}
-    config = Config.model_validate(data)
+    def save(self, path: str | Path = FILE_PATH) -> None:
+        path = Path(path)
 
-    # write back if config file is missing any fields
-    if data != config.model_dump():
-        save_config(config, path)
+        # create config dir if not exists
+        if not path.parent.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
 
-    # return
-    return config
+        # save config
+        path.write_text(
+            yaml.safe_dump(
+                self.model_dump(),
+                sort_keys=False,
+                allow_unicode=True
+            ),
+            encoding='utf-8'
+        )
+
+    def validate(self) -> None:
+        # check digest dependencies
+        if self.telegram.enabled and not self.digest.enabled:
+            raise ValueError('Telegram requires digest.enabled to be true')
+
+    def log(self, logger: Logger) -> None:
+        def log_enabled(name: str, enabled: bool) -> None:
+            logger.info(f"{name} {'enabled' if enabled else 'disabled'}")
+
+        # log digest config
+        log_enabled("Digest", self.digest.enabled)
+        if self.digest.enabled:
+            logger.info(f"Digest model: {self.digest.model}")
+
+        # log oss config
+        log_enabled("OSS", self.oss.enabled)
+
+        # log email config
+        log_enabled("Email", self.email.enabled)
+        if self.email.enabled:
+            logger.info("Email recipients:")
+            for recipient in self.email.recipients:
+                logger.info(f"  - {recipient}")
+
+        # log telegram config
+        log_enabled("Telegram", self.telegram.enabled)

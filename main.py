@@ -5,7 +5,7 @@ import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 from func_timeout import func_timeout, FunctionTimedOut
 
-from src.config import Config, load_config
+from src.config import Config
 from src.digest import generate_digest
 from src.exceptions import NoPagesFoundError
 from src.logger import Logger
@@ -15,35 +15,6 @@ from src.send_telegram import send_telegram_digest, send_telegram_toc
 from src.upload_to_oss import upload_to_oss
 
 logger = Logger("People's Daily")
-
-
-def log_config(config: Config) -> None:
-    # log digest config
-    if config.digest.enabled:
-        logger.info(f"Digest enabled, model: {config.digest.model}")
-    else:
-        logger.info("Digest disabled")
-
-    # log oss config
-    if config.oss.enabled:
-        logger.info(f"OSS enabled")
-    else:
-        logger.info("OSS disabled")
-
-    # log email config
-    if config.email.enabled:
-        logger.info("Email enabled")
-        logger.info("Email recipients:")
-        for recipient in config.email.recipients:
-            logger.info(f"  - {recipient}")
-    else:
-        logger.info("Email disabled")
-
-    # log telegram config
-    if config.telegram.enabled:
-        logger.info("Telegram enabled")
-    else:
-        logger.info("Telegram disabled")
 
 
 def daily_task(
@@ -191,9 +162,9 @@ def main_cron(config: Config) -> None:
 
 def main():
     # load config
-    config = load_config()
+    config = Config.load()
     logger.set_debug(config.debug)
-    log_config(config)
+    config.log(logger)
 
     # run
     if config.cron_enabled:
