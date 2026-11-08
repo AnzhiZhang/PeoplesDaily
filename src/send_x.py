@@ -287,7 +287,7 @@ def generate_x_digest(
     if today_peoples_daily.data.x.digest is not None:
         result = XDigest.model_validate(today_peoples_daily.data.x.digest)
         validate_sources(result, today_peoples_daily.data.digest)
-        today_peoples_daily.logger.info(
+        today_peoples_daily.logger.debug(
             'X digest skipped (already saved in data.json)'
         )
     else:
@@ -332,7 +332,7 @@ def generate_x_digest(
 
         # log
         if response.usage:
-            today_peoples_daily.logger.info(
+            today_peoples_daily.logger.debug(
                 f'X digest tokens: input {response.usage.prompt_tokens}, '
                 f'output {response.usage.completion_tokens}'
             )
@@ -791,7 +791,7 @@ def _create_x_images(
             (output / '03-commentary.png').unlink(missing_ok=True)
 
     # log
-    today_peoples_daily.logger.info(f'X images saved to {output}')
+    today_peoples_daily.logger.debug(f'X images saved to {output}')
     return [output / name for name in names]
 
 
@@ -1062,7 +1062,7 @@ def send_x(config: Config, today_peoples_daily: TodayPeopleDaily) -> str:
     # publish to x
     with XClient(config.x) as client:
         account = client.account()
-        today_peoples_daily.logger.info(
+        today_peoples_daily.logger.debug(
             f'Publishing {today_peoples_daily.data.date} '
             f'to @{account["username"]}'
         )
