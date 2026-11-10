@@ -140,25 +140,6 @@ class ImageDigest(PlainTextModel):
         default_factory=list, max_length=2
     )
 
-    @model_validator(mode='after')
-    def check_two_commentaries(self):
-        if len(self.commentary) == 2:
-            for item in self.commentary:
-                if len(item.body) > 70:
-                    raise ValueError(
-                        'Two-commentary layout needs bodies '
-                        'of at most 70 characters'
-                    )
-                emphasis = item.emphasis
-                if emphasis and (
-                    (emphasis.text and len(emphasis.text) > 30)
-                    or len(emphasis.metrics) > 1
-                ):
-                    raise ValueError(
-                        'Two-commentary layout needs shorter emphasis'
-                    )
-        return self
-
 
 def validate_item_counts(
     digest: ImageDigest, original: DigestDataSection
@@ -671,7 +652,9 @@ class ImageRenderer:
             ) + (22 if compact else 36)
             if item.emphasis:
                 draw.line((74, y, 1126, y), fill=RULE, width=1)
-                y = self.emphasis(draw, item.emphasis, y + 22, compact)
+                y = self.emphasis(
+                    draw, item.emphasis, y + (18 if compact else 22), compact
+                )
             if compact:
                 if y > top + 480:
                     raise ValueError('Two-commentary panel overflow')

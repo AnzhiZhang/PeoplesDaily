@@ -153,25 +153,17 @@ class ImageGenerationTests(unittest.TestCase):
         self.assertEqual(daily.data.images.model_dump(), payload)
         api.chat.completions.create.assert_called_once()
 
-    def test_two_commentaries_need_concise_copy(self):
+    def test_two_commentaries_use_the_same_field_limits(self):
         payload = copy.deepcopy(VALID)
         payload['commentary'] = [
-            commentary(body='字' * 71),
-            commentary(),
+            commentary({'kind': 'claim', 'text': '字' * 40}, '字' * 100),
+            commentary(body='字' * 100),
         ]
+        ImageDigest.model_validate(payload)
+        payload['commentary'][0]['body'] += '字'
         with self.assertRaises(ValidationError):
             ImageDigest.model_validate(payload)
-        payload['commentary'] = [
-            commentary(),
-            commentary(),
-            commentary(),
-        ]
-        with self.assertRaises(ValidationError):
-            ImageDigest.model_validate(payload)
-        payload['commentary'] = [
-            commentary({'kind': 'claim', 'text': '字' * 31}),
-            commentary(),
-        ]
+        payload['commentary'] = [commentary()] * 3
         with self.assertRaises(ValidationError):
             ImageDigest.model_validate(payload)
 
@@ -206,8 +198,8 @@ class ImageGenerationTests(unittest.TestCase):
     def test_all_emphasis_layouts_single_and_double(self):
         options = [
             None,
-            {'kind': 'claim', 'text': '字' * 30},
-            {'kind': 'quote', 'text': '字' * 30},
+            {'kind': 'claim', 'text': '字' * 40},
+            {'kind': 'quote', 'text': '字' * 40},
             {
                 'kind': 'data',
                 'metrics': [
@@ -244,9 +236,7 @@ class ImageGenerationTests(unittest.TestCase):
                 for emphasis in options:
                     payload = copy.deepcopy(VALID)
                     payload['commentary'] = [
-                        commentary(
-                            emphasis, '字' * (100 if count == 1 else 70)
-                        )
+                        commentary(emphasis, '字' * 100)
                         for i in range(count)
                     ]
                     for item in payload['commentary']:
