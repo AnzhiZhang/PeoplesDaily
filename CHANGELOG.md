@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.6.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.5.1...v2.6.0) (2026-11-10)
+
+
+### Features
+
+* publish generated images in Telegram albums ([47aca4f](https://github.com/AnzhiZhang/PeoplesDaily/commit/47aca4f17e94239047be57d693d57ec86710dbea))
+
+
+### Bug Fixes
+
+* save missing config defaults before validation ([df0a3ae](https://github.com/AnzhiZhang/PeoplesDaily/commit/df0a3aeea0fe35ddbd1aa83dbd742e54070f797a))
+
 ## [2.5.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.5.0...v2.5.1) (2026-11-08)
 
 
