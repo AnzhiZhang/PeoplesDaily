@@ -18,7 +18,6 @@ VALID = {
     'intro': '今日关注政策与国际合作的新进展。',
     'highlights': [
         {
-            'source_id': 1,
             'title': '一项重要进展',
             'body': '保留原摘要中的关键事实。',
         }

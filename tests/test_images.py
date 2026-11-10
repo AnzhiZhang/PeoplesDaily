@@ -19,7 +19,7 @@ from src.generate_images import (
     generate_image_digest,
     generate_images,
     validate_metric,
-    validate_sources,
+    validate_item_counts,
     verify_emphasis,
 )
 
@@ -27,7 +27,6 @@ VALID = {
     'intro': '今日关注政策与国际合作的新进展。',
     'highlights': [
         {
-            'source_id': 1,
             'title': '一项重要进展',
             'body': '保留原摘要中的关键事实。',
         }
@@ -36,9 +35,8 @@ VALID = {
 }
 
 
-def commentary(emphasis=None, source_id=1, body='评论认为要打通改革堵点。'):
+def commentary(emphasis=None, body='评论认为要打通改革堵点。'):
     return {
-        'source_id': source_id,
         'title': '改革激发活力',
         'body': body,
         'emphasis': emphasis,
@@ -73,21 +71,22 @@ class ImageGenerationTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             ImageDigest.model_validate(payload)
 
-    def test_source_ids_are_unique_and_present(self):
+    def test_image_items_must_match_full_digest_counts(self):
         original = DigestDataSection.model_validate(
             {'highlights': [{}], 'commentary': [{}]}
         )
         payload = copy.deepcopy(VALID)
-        payload['commentary'] = [commentary(), commentary()]
-        with self.assertRaises(ValueError):
-            validate_sources(ImageDigest.model_validate(payload), original)
-        payload['commentary'] = [commentary(source_id=2)]
-        with self.assertRaises(ValueError):
-            validate_sources(ImageDigest.model_validate(payload), original)
-        payload['commentary'] = []
+        with self.assertRaisesRegex(ValueError, 'commentary'):
+            validate_item_counts(ImageDigest.model_validate(payload), original)
+        payload['commentary'] = [commentary()]
+        validate_item_counts(ImageDigest.model_validate(payload), original)
+        payload['commentary'].append(commentary())
+        with self.assertRaisesRegex(ValueError, 'commentary'):
+            validate_item_counts(ImageDigest.model_validate(payload), original)
+        payload['commentary'] = [commentary()]
         payload['highlights'] *= 2
-        with self.assertRaises(ValueError):
-            validate_sources(ImageDigest.model_validate(payload), original)
+        with self.assertRaisesRegex(ValueError, 'highlights'):
+            validate_item_counts(ImageDigest.model_validate(payload), original)
 
     def test_saved_image_digest_is_reused_without_changing_source(self):
         daily = SimpleNamespace(
@@ -122,24 +121,56 @@ class ImageGenerationTests(unittest.TestCase):
         )
         self.assertEqual(original, daily.data.digest)
 
+    def test_generation_keeps_four_items_and_replaces_incomplete_cache(self):
+        payload = copy.deepcopy(VALID)
+        payload['highlights'] = [
+            {'title': f'第{index}条', 'body': '对应原摘要内容。'}
+            for index in range(1, 5)
+        ]
+        daily = SimpleNamespace(
+            data=Data(
+                date='2026-11-10',
+                digest={'highlights': [{}] * 4, 'commentary': []},
+                images=VALID,
+            ),
+            logger=MagicMock(),
+        )
+        with (
+            patch('src.generate_images.OpenAI') as client,
+            patch('src.generate_images.commentary_context', return_value={}),
+        ):
+            api = client.return_value.__enter__.return_value
+            response = api.chat.completions.create.return_value
+            response.choices = [SimpleNamespace(
+                message=SimpleNamespace(content=json.dumps(payload))
+            )]
+            response.usage = None
+            result = generate_image_digest(Config(), daily)
+        self.assertEqual(
+            [item.title for item in result.highlights],
+            ['第1条', '第2条', '第3条', '第4条']
+        )
+        self.assertEqual(daily.data.images.model_dump(), payload)
+        api.chat.completions.create.assert_called_once()
+
     def test_two_commentaries_need_concise_copy(self):
         payload = copy.deepcopy(VALID)
         payload['commentary'] = [
             commentary(body='字' * 71),
-            commentary(source_id=2),
+            commentary(),
         ]
         with self.assertRaises(ValidationError):
             ImageDigest.model_validate(payload)
         payload['commentary'] = [
             commentary(),
-            commentary(source_id=2),
-            commentary(source_id=3),
+            commentary(),
+            commentary(),
         ]
         with self.assertRaises(ValidationError):
             ImageDigest.model_validate(payload)
         payload['commentary'] = [
             commentary({'kind': 'claim', 'text': '字' * 31}),
-            commentary(source_id=2),
+            commentary(),
         ]
         with self.assertRaises(ValidationError):
             ImageDigest.model_validate(payload)
@@ -158,7 +189,7 @@ class ImageGenerationTests(unittest.TestCase):
         payload['commentary'] = [
             commentary({'kind': 'quote', 'text': '以改革打通堵点'}),
             commentary(
-                {'kind': 'data', 'metrics': [metric.model_dump()]}, source_id=2
+                {'kind': 'data', 'metrics': [metric.model_dump()]}
             ),
         ]
         result = ImageDigest.model_validate(payload)
@@ -214,7 +245,7 @@ class ImageGenerationTests(unittest.TestCase):
                     payload = copy.deepcopy(VALID)
                     payload['commentary'] = [
                         commentary(
-                            emphasis, i + 1, '字' * (100 if count == 1 else 70)
+                            emphasis, '字' * (100 if count == 1 else 70)
                         )
                         for i in range(count)
                     ]
@@ -224,9 +255,19 @@ class ImageGenerationTests(unittest.TestCase):
                         ImageDigest.model_validate(payload),
                         Path(directory) / 'commentary.png',
                     )
-            digest = ImageDigest.model_validate(VALID)
-            digest.highlights[0].body = '字' * 80
-            renderer.highlights(digest, Path(directory) / 'highlights.png')
+            for count in (1, 3, 4, 5):
+                payload = copy.deepcopy(VALID)
+                payload['highlights'][0].update(
+                    title='字' * 20, body='字' * 80
+                )
+                payload['highlights'] *= count
+                daily.data.digest.highlights = [
+                    {'sources': sources} for _ in range(count)
+                ]
+                renderer.highlights(
+                    ImageDigest.model_validate(payload),
+                    Path(directory) / 'highlights.png'
+                )
         self.assertEqual(ImageRenderer.column_tag('观点（和音）'), '和音')
         self.assertEqual(ImageRenderer.column_tag('普通标题'), '')
 

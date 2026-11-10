@@ -45,18 +45,17 @@ PROMPT = """你是日报的社交媒体编辑。根据已有摘要和评论原�
 返回 JSON：
 {
   "intro": "60到90字为宜，最多100字，选择2到3个重点，不写日期和免责声明",
-  "highlights": [{"source_id": 1, "title": "最多20字", "body": "最多80字"}],
+  "highlights": [{"title": "最多20字", "body": "最多80字"}],
   "commentary": [{
-    "source_id": 1, "title": "最多20字的具体观点", "body": "解读文章针对什么、\
+    "title": "最多20字的具体观点", "body": "解读文章针对什么、\
 主张什么",
     "emphasis": null
   }]
 }
-source_id 分别对应输入 highlights、commentary 列表从1开始的编号，每个来源只能选\
-一次。
-highlights 选1到3条最重要的，不合并不同来源，不使用省略号截断。
-commentary 为0到2条的列表，优先保留有不同观点、不同主题的两篇；没有合适评论返回\
-[]。
+highlights、commentary 必须分别保留输入的全部条目，数量和顺序与输入完全一致。
+只压缩每条的标题和正文，不筛选、遗漏、合并或调整顺序，不使用省略号截断。
+commentary_articles 按 commentary 的同一顺序提供原文，空字符串表示未获取原文。
+输入没有评论时返回空列表。
 单篇正文最多100字；双篇每篇建议40到60字、最多70字，避免重复和空泛口号。
 以“评论认为”“文章主张”等明确归属。标题不加“评论：”前缀，栏目标签由程序提取。
 
@@ -101,7 +100,6 @@ class PlainTextModel(BaseModel):
 
 
 class ImageHighlight(PlainTextModel):
-    source_id: int = Field(ge=1, strict=True)
     title: str = Field(min_length=1, max_length=20)
     body: str = Field(min_length=1, max_length=80)
 
@@ -128,7 +126,6 @@ class ImageEmphasis(PlainTextModel):
 
 
 class ImageCommentary(PlainTextModel):
-    source_id: int = Field(ge=1, strict=True)
     title: str = Field(min_length=1, max_length=20)
     body: str = Field(min_length=1, max_length=100)
     emphasis: ImageEmphasis | None = None
@@ -136,7 +133,7 @@ class ImageCommentary(PlainTextModel):
 
 class ImageDigest(PlainTextModel):
     intro: str = Field(min_length=1, max_length=100)
-    highlights: list[ImageHighlight] = Field(min_length=1, max_length=3)
+    highlights: list[ImageHighlight] = Field(min_length=1, max_length=5)
     commentary: list[ImageCommentary] = Field(
         default_factory=list, max_length=2
     )
@@ -161,17 +158,13 @@ class ImageDigest(PlainTextModel):
         return self
 
 
-def validate_sources(digest: ImageDigest, original: DigestDataSection) -> None:
-    ids = [h.source_id for h in digest.highlights]
-    if len(set(ids)) != len(ids) or any(
-        i > len(original.highlights) for i in ids
-    ):
-        raise ValueError('Invalid or repeated highlight source_id')
-    ids = [item.source_id for item in digest.commentary]
-    if len(set(ids)) != len(ids) or any(
-        i > len(original.commentary) for i in ids
-    ):
-        raise ValueError('Invalid or repeated commentary source_id')
+def validate_item_counts(
+    digest: ImageDigest, original: DigestDataSection
+) -> None:
+    if len(digest.highlights) != len(original.highlights):
+        raise ValueError('Image highlights must match the full digest')
+    if len(digest.commentary) != len(original.commentary):
+        raise ValueError('Image commentary must match the full digest')
 
 
 def commentary_context(daily: TodayPeopleDaily) -> dict[int, str]:
@@ -215,11 +208,11 @@ def validate_metric(metric: ImageMetric, source: str) -> None:
 def verify_emphasis(
     result: ImageDigest, contexts: dict[int, str], logger: Logger
 ) -> None:
-    for item in result.commentary:
+    for index, item in enumerate(result.commentary, 1):
         emphasis = item.emphasis
         if not emphasis:
             continue
-        source = contexts.get(item.source_id, '')
+        source = contexts.get(index, '')
         if emphasis.kind == 'quote':
             if not source or unicodedata.normalize(
                 'NFKC', emphasis.text
@@ -254,16 +247,24 @@ def generate_image_digest(
     ):
         raise ValueError('Images require an existing daily digest')
 
-    # reuse saved image digest
+    # reuse saved image digest when it matches the current structure
+    result = None
     if today_peoples_daily.data.images.intro is not None:
-        result = ImageDigest.model_validate(
-            today_peoples_daily.data.images.model_dump()
-        )
-        validate_sources(result, today_peoples_daily.data.digest)
-        today_peoples_daily.logger.debug(
-            'Image digest skipped (already saved in data.json)'
-        )
-    else:
+        try:
+            result = ImageDigest.model_validate(
+                today_peoples_daily.data.images.model_dump()
+            )
+            validate_item_counts(result, today_peoples_daily.data.digest)
+        except ValueError:
+            result = None
+            today_peoples_daily.logger.debug(
+                'Regenerating image digest (cached content no longer matches)'
+            )
+        else:
+            today_peoples_daily.logger.debug(
+                'Image digest skipped (already saved in data.json)'
+            )
+    if result is None:
         # get commentary context
         contexts = commentary_context(today_peoples_daily)
         payload = {
@@ -271,9 +272,10 @@ def generate_image_digest(
             'page_count': today_peoples_daily.data.page_count,
             'digest': today_peoples_daily.data.digest.model_dump(),
             'commentary_articles': [
-                {'source_id': index, 'content': content}
-                for index, content in contexts.items()
-                if content
+                contexts.get(index, '')
+                for index in range(
+                    1, len(today_peoples_daily.data.digest.commentary) + 1
+                )
             ],
         }
 
@@ -300,7 +302,7 @@ def generate_image_digest(
         result = ImageDigest.model_validate_json(
             response.choices[0].message.content
         )
-        validate_sources(result, today_peoples_daily.data.digest)
+        validate_item_counts(result, today_peoples_daily.data.digest)
         verify_emphasis(result, contexts, today_peoples_daily.logger)
 
         # log
@@ -498,11 +500,17 @@ class ImageRenderer:
 
     def highlights(self, digest: ImageDigest, output: Path) -> None:
         image, draw = self.base('今日要点', 2)
+        count = len(digest.highlights)
+        compact = count >= 4
+        title_size = 32 if count == 5 else 36 if compact else 41
+        body_size = 24 if count == 5 else 28 if compact else 32
+        source_size = 18 if count == 5 else 20 if compact else 23
+        gap = 14 if count == 5 else 20 if compact else 38
         y = 344
         for index, item in enumerate(digest.highlights, 1):
-            number_font = self.font(34, True)
+            number_font = self.font(28 if compact else 34, True)
             number_bounds = number_font.getbbox('国')
-            title_bounds = self.font(41, True).getbbox('国')
+            title_bounds = self.font(title_size, True).getbbox('国')
             number_y = (
                 y
                 - 3
@@ -523,35 +531,36 @@ class ImageRenderer:
                     item.title,
                     152,
                     y - 3,
-                    size=41,
+                    size=title_size,
                     width=974,
                     bold=True,
                     leading=1.35,
                 )
-                + 24
+                + (10 if compact else 24)
             )
             y = (
                 self.paragraph(
-                    draw, item.body, 152, y, size=32, width=974, leading=1.7
+                    draw, item.body, 152, y, size=body_size, width=974,
+                    leading=1.4 if compact else 1.7
                 )
-                + 18
+                + (10 if compact else 18)
             )
-            original = self.daily.data.digest.highlights[item.source_id - 1]
+            original = self.daily.data.digest.highlights[index - 1]
             y = (
                 self.paragraph(
                     draw,
                     self.source_pages(original['sources']),
                     152,
                     y,
-                    size=23,
+                    size=source_size,
                     width=974,
                     color=MUTED,
                 )
-                + 36
+                + (gap if compact else 36)
             )
             if index < len(digest.highlights):
                 draw.line((152, y, 1126, y), fill=RULE, width=1)
-                y += 38
+                y += gap
         if y > 1450:
             raise ValueError(
                 'Highlight image overflow; '
@@ -620,7 +629,7 @@ class ImageRenderer:
         image, draw = self.base('评论风向', 3)
         compact = len(digest.commentary) == 2
         for index, item in enumerate(digest.commentary):
-            original = self.daily.data.digest.commentary[item.source_id - 1]
+            original = self.daily.data.digest.commentary[index]
             tag = self.column_tag(original['title'])
             top = 340 + index * 558 if compact else 350
             y = top
