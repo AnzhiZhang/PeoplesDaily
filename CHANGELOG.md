@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.6.0...v2.7.0) (2026-11-10)
+
+
+### Features
+
+* upload generated images to OSS ([e6d9bd4](https://github.com/AnzhiZhang/PeoplesDaily/commit/e6d9bd49b98021c276e3eadb16beff427fcd3c65))
+
 ## [2.6.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.5.1...v2.6.0) (2026-11-10)
 
 
