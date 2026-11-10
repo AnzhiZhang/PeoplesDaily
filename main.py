@@ -15,7 +15,7 @@ from src.peoples_daily import TodayPeopleDaily
 from src.send_email import send_email
 from src.send_telegram import send_telegram
 from src.send_x import send_x
-from src.upload_to_oss import upload_to_oss
+from src.upload_to_oss import upload_images_to_oss, upload_to_oss
 
 logger = Logger("People's Daily")
 executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="peoplesdaily")
@@ -103,6 +103,13 @@ def daily_task(
         if config.oss.enabled:
             oss = executor.submit(upload_to_oss, config, today_peoples_daily)
             tasks.append(oss)
+
+        # upload images to oss after image generation
+        if config.oss.enabled and config.images.enabled:
+            tasks.append(executor.submit(
+                run_after, upload_images_to_oss,
+                config, today_peoples_daily, images
+            ))
 
         # send email after oss upload
         if config.email.enabled:

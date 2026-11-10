@@ -15,6 +15,7 @@ class Status(BaseModel):
     digest_generated: bool = False
     oss_uploaded: bool = False
     oss_url: Optional[str] = None
+    oss_images_uploaded: bool = False
     email_sent: bool = False
     telegram_sent: bool = False
     x_post_id: Optional[str] = None

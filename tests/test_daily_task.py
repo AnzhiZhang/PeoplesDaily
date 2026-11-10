@@ -17,6 +17,7 @@ class DailyTaskTests(unittest.TestCase):
         images=True,
         x=True,
         telegram=True,
+        oss=True,
         failure=None,
         block_digest=False,
     ):
@@ -61,8 +62,8 @@ class DailyTaskTests(unittest.TestCase):
                 'images': {'enabled': digest and images},
                 'x': {'enabled': digest and x},
                 'telegram': {'enabled': digest and telegram},
-                'oss': {'enabled': True},
-                'email': {'enabled': True},
+                'oss': {'enabled': oss},
+                'email': {'enabled': oss},
             }
         )
         config.validate()
@@ -76,6 +77,7 @@ class DailyTaskTests(unittest.TestCase):
                 generate_digest=action('digest'),
                 generate_images=action('images'),
                 upload_to_oss=action('oss'),
+                upload_images_to_oss=action('oss_images'),
                 send_email=action('email'),
                 send_telegram=action('telegram'),
                 send_x=action('x'),
@@ -93,12 +95,16 @@ class DailyTaskTests(unittest.TestCase):
         events = self.run_pipeline(block_digest=True)
         self.assertCountEqual(
             events,
-            ['oss', 'email', 'digest', 'images', 'telegram', 'x', 'save'],
+            [
+                'oss', 'oss_images', 'email', 'digest', 'images',
+                'telegram', 'x', 'save'
+            ],
         )
         self.assertEqual(events[-1], 'save')
         for before, after in (
             ('oss', 'email'),
             ('digest', 'images'),
+            ('images', 'oss_images'),
             ('images', 'telegram'),
             ('images', 'x'),
         ):
@@ -109,6 +115,7 @@ class DailyTaskTests(unittest.TestCase):
             'digest',
             'images',
             'oss',
+            'oss_images',
             'email',
             'telegram',
             'x',
@@ -121,8 +128,14 @@ class DailyTaskTests(unittest.TestCase):
                 if name in ('digest', 'images'):
                     self.assertNotIn('x', events)
                     self.assertNotIn('telegram', events)
+                    self.assertNotIn('oss_images', events)
                 if name == 'oss':
                     self.assertNotIn('email', events)
+                    self.assertIn('oss_images', events)
+                if name == 'oss_images':
+                    self.assertIn('email', events)
+                    self.assertIn('telegram', events)
+                    self.assertIn('x', events)
 
     def test_download_failure_does_not_save_incomplete_data(self):
         self.assertEqual(self.run_pipeline(failure='download'), [])
@@ -150,3 +163,12 @@ class DailyTaskTests(unittest.TestCase):
         events = self.run_pipeline(images=False, x=False, telegram=False)
         self.assertIn('digest', events)
         self.assertNotIn('images', events)
+        self.assertNotIn('oss_images', events)
+
+    def test_images_do_not_require_oss(self):
+        events = self.run_pipeline(oss=False)
+        self.assertIn('images', events)
+        self.assertIn('telegram', events)
+        self.assertIn('x', events)
+        self.assertNotIn('oss', events)
+        self.assertNotIn('oss_images', events)

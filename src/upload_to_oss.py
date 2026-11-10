@@ -5,12 +5,24 @@ from .peoples_daily import TodayPeopleDaily
 
 __all__ = [
     'upload_to_oss',
+    'upload_images_to_oss',
 ]
 
 
 def join_oss_key(date: str, name: str) -> str:
     path = '/'.join(date.split('-'))
     return f'{path}/{name}'
+
+
+def create_bucket(config: Config) -> oss2.Bucket:
+    auth = oss2.AuthV4(config.oss.access_key_id, config.oss.access_key_secret)
+    return oss2.Bucket(
+        auth,
+        config.oss.endpoint,
+        config.oss.bucket_name,
+        is_cname=config.oss.is_cname,
+        region=config.oss.region
+    )
 
 
 def upload_to_oss(
@@ -29,14 +41,7 @@ def upload_to_oss(
         return
 
     # construct oss bucket
-    auth = oss2.AuthV4(config.oss.access_key_id, config.oss.access_key_secret)
-    bucket = oss2.Bucket(
-        auth,
-        config.oss.endpoint,
-        config.oss.bucket_name,
-        is_cname=config.oss.is_cname,
-        region=config.oss.region
-    )
+    bucket = create_bucket(config)
 
     # upload to oss
     merged_pdf_key = join_oss_key(
@@ -69,3 +74,35 @@ def upload_to_oss(
     today_peoples_daily.logger.info(
         f'Uploaded to OSS at {today_peoples_daily.status.oss_url}'
     )
+
+
+def upload_images_to_oss(
+        config: Config,
+        today_peoples_daily: TodayPeopleDaily
+):
+    # skip if already uploaded
+    if today_peoples_daily.status.oss_images_uploaded:
+        today_peoples_daily.logger.info(
+            'OSS image upload skipped (already done)'
+        )
+        return
+
+    # check generated images
+    if not today_peoples_daily.image_paths:
+        raise ValueError('No generated images to upload')
+
+    # construct oss bucket
+    bucket = create_bucket(config)
+
+    # upload images to oss
+    for path in today_peoples_daily.image_paths:
+        key = join_oss_key(
+            today_peoples_daily.data.date, f'images/{path.name}'
+        )
+        bucket.put_object_from_file(key, str(path))
+
+    # update status
+    today_peoples_daily.status.oss_images_uploaded = True
+
+    # log
+    today_peoples_daily.logger.info('Uploaded images to OSS')
