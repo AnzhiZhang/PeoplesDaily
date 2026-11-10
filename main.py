@@ -9,6 +9,7 @@ from func_timeout import func_timeout, FunctionTimedOut
 from src.config import Config
 from src.digest import generate_digest
 from src.exceptions import NoPagesFoundError
+from src.generate_images import generate_images
 from src.logger import Logger
 from src.peoples_daily import TodayPeopleDaily
 from src.send_email import send_email
@@ -73,6 +74,7 @@ def daily_task(
     today_peoples_daily = TodayPeopleDaily(logger, date)
     tasks = []
     digest = None
+    images = None
     oss = None
 
     # main task
@@ -90,6 +92,13 @@ def daily_task(
             )
             tasks.append(digest)
 
+        # generate images
+        if config.images.enabled:
+            images = executor.submit(
+                run_after, generate_images, config, today_peoples_daily, digest
+            )
+            tasks.append(images)
+
         # upload to oss
         if config.oss.enabled:
             oss = executor.submit(upload_to_oss, config, today_peoples_daily)
@@ -101,16 +110,16 @@ def daily_task(
                 run_after, send_email, config, today_peoples_daily, oss
             ))
 
-        # send telegram after digest generation
+        # send telegram after image generation
         if config.telegram.enabled:
             tasks.append(executor.submit(
-                run_after, send_telegram, config, today_peoples_daily, digest
+                run_after, send_telegram, config, today_peoples_daily, images
             ))
 
-        # send x after digest generation
+        # send x after image generation
         if config.x.enabled:
             tasks.append(executor.submit(
-                run_after, send_x, config, today_peoples_daily, digest
+                run_after, send_x, config, today_peoples_daily, images
             ))
 
         # wait for all tasks and propagate failures

@@ -5,6 +5,7 @@ import zipfile
 import datetime
 import urllib.parse
 from logging import Logger
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
@@ -170,6 +171,7 @@ class TodayPeopleDaily:
         self.home_url = None
 
         self.pages: list['Page'] = []
+        self.image_paths: list[Path] = []
 
         self.data: Data | None = None
         self.status: Status | None = None

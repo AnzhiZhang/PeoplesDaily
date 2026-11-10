@@ -22,6 +22,7 @@ class ConfigTests(unittest.TestCase):
             path = Path(directory) / 'config.yaml'
             path.write_text(
                 'digest:\n  enabled: true\n'
+                'images:\n  enabled: true\n'
                 'x:\n  enabled: true\n  refresh_token: test-refresh\n'
             )
             config = Config.load(path)
@@ -35,19 +36,27 @@ class ConfigTests(unittest.TestCase):
             self.assertEqual(restored.x.refresh_token, 'test-refresh')
             self.assertTrue(restored.digest.enabled)
 
-    def test_telegram_and_x_require_digest(self):
+    def test_telegram_and_x_require_images(self):
         for channel, name in (('telegram', 'Telegram'), ('x', 'X')):
             with self.subTest(channel=channel):
                 config = Config.model_validate({channel: {'enabled': True}})
                 with self.assertRaisesRegex(
-                    ValueError, name + ' requires digest.enabled'
+                    ValueError, name + ' requires images.enabled'
                 ):
                     config.validate()
 
-    def test_digest_allows_both_channels(self):
+    def test_images_require_digest(self):
+        config = Config.model_validate({'images': {'enabled': True}})
+        with self.assertRaisesRegex(
+            ValueError, 'Images requires digest.enabled'
+        ):
+            config.validate()
+
+    def test_images_allow_both_channels(self):
         config = Config.model_validate(
             {
                 'digest': {'enabled': True},
+                'images': {'enabled': True},
                 'telegram': {'enabled': True},
                 'x': {'enabled': True},
             }
@@ -75,6 +84,7 @@ class ConfigTests(unittest.TestCase):
         output = '\n'.join(call.args[0] for call in logger.info.call_args_list)
         self.assertIn('Digest enabled', output)
         self.assertIn('Digest model: test-model', output)
+        self.assertIn('Images disabled', output)
         self.assertIn('Telegram enabled', output)
         self.assertIn('X enabled', output)
         for secret in (
@@ -89,17 +99,18 @@ class ConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'config.yaml'
             original = {
+                'digest': {'enabled': True},
                 'x': {'enabled': True, 'refresh_token': 'test-refresh'}
             }
             path.write_text(yaml.safe_dump(original))
             with self.assertRaisesRegex(
-                ValueError, 'X requires digest.enabled'
+                ValueError, 'X requires images.enabled'
             ):
                 Config.load(path)
             saved = yaml.safe_load(path.read_text())
             self.assertEqual(
                 saved, Config.model_validate(original).model_dump()
             )
-            self.assertFalse(saved['digest']['enabled'])
+            self.assertFalse(saved['images']['enabled'])
             self.assertTrue(saved['x']['enabled'])
             self.assertEqual(saved['x']['refresh_token'], 'test-refresh')

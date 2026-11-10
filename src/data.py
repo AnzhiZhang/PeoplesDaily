@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 __all__ = [
     'DigestDataSection',
-    'XDataSection',
+    'ImagesDataSection',
     'Data',
 ]
 
@@ -15,9 +15,10 @@ class DigestDataSection(BaseModel):
     commentary: list[dict] = Field(default_factory=list)
 
 
-class XDataSection(BaseModel):
-    post: str | None = None
-    digest: dict | None = None
+class ImagesDataSection(BaseModel):
+    intro: str | None = None
+    highlights: list[dict] = Field(default_factory=list)
+    commentary: list[dict] = Field(default_factory=list)
 
 
 class Data(BaseModel):
@@ -25,7 +26,7 @@ class Data(BaseModel):
     page_count: int = 0
     pages: dict[str, dict] = Field(default_factory=dict)
     digest: DigestDataSection | None = None
-    x: XDataSection = Field(default_factory=XDataSection)
+    images: ImagesDataSection = Field(default_factory=ImagesDataSection)
 
     @property
     def summary(self) -> str:

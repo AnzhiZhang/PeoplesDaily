@@ -7,14 +7,14 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from src.config import Config
-from src.data import Data, DigestDataSection, XDataSection
+from src.data import Data, DigestDataSection, ImagesDataSection
 from src.digest import generate_digest
 from src.peoples_daily import Article, Page, TodayPeopleDaily
 from src.send_telegram import build_digest_message
 
 
 class DataTests(unittest.TestCase):
-    def test_save_and_restore_preserves_digest_x_and_status(self):
+    def test_save_and_restore_preserves_digest_images_and_status(self):
         with (
             tempfile.TemporaryDirectory() as directory,
             patch('src.peoples_daily.DATA_DIR', directory),
@@ -43,14 +43,15 @@ class DataTests(unittest.TestCase):
             daily.data.digest = DigestDataSection.model_validate(
                 {'highlights': [{'title': '要点'}]}
             )
-            daily.data.x = XDataSection(
-                digest={
-                    'commentary': [{'title': '评论一'}, {'title': '评论二'}]
-                },
-                post='今日配文',
+            daily.data.images = ImagesDataSection(
+                intro='简短导读',
+                commentary=[{'title': '评论一'}, {'title': '评论二'}],
             )
             daily.status.downloaded = True
             daily.status.x_post_id = '12345'
+            daily.image_paths = [
+                Path(daily.dir_path) / 'images/01-frontpage.png'
+            ]
             daily.save()
             cached = json.loads(Path(daily.data_json_path).read_text())
             cached.update(
@@ -83,6 +84,13 @@ class DataTests(unittest.TestCase):
             self.assertNotIn('pages_zip_path', saved)
             self.assertNotIn('merged_pdf_path', saved)
             self.assertNotIn('summary', saved)
+            self.assertNotIn('digest', saved['images'])
+            self.assertEqual(saved['images']['intro'], '简短导读')
+            self.assertNotIn('post', saved['images'])
+            self.assertNotIn('files', saved['images'])
+            self.assertNotIn('x', saved)
+            self.assertNotIn('image_paths', saved)
+            self.assertEqual(restored.image_paths, [])
             self.assertEqual(
                 Data.load(restored.data_json_path).pages['01']['articles'][0][
                     'title'

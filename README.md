@@ -34,6 +34,8 @@ digest:
   base_url: ''
   api_key: ''
   model: ''
+images:
+  enabled: false
 oss:
   enabled: false
   access_key_id: ''
@@ -72,6 +74,7 @@ x:
 | digest.base_url | OpenAI 兼容接口地址，如 `https://api.deepseek.com` |
 | digest.api_key | 接口密钥 |
 | digest.model | 模型名称，如 `deepseek-chat` |
+| images.enabled | 是否启用图片生成，需启用 digest.enabled |
 | oss.enabled | 是否启用 OSS 上传 |
 | oss.access_key_id | OSS Access Key ID |
 | oss.access_key_secret | OSS Access Key Secret |

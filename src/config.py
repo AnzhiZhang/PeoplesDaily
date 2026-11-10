@@ -15,6 +15,10 @@ class DigestConfigSection(BaseModel):
     model: str = ''
 
 
+class ImagesConfigSection(BaseModel):
+    enabled: bool = False
+
+
 class OSSConfigSection(BaseModel):
     enabled: bool = False
     access_key_id: str = ''
@@ -59,6 +63,7 @@ class Config(BaseModel):
     debug: bool = False
 
     digest: DigestConfigSection = Field(default_factory=DigestConfigSection)
+    images: ImagesConfigSection = Field(default_factory=ImagesConfigSection)
     oss: OSSConfigSection = Field(default_factory=OSSConfigSection)
     email: EmailConfigSection = Field(default_factory=EmailConfigSection)
     telegram: TelegramConfigSection = Field(
@@ -109,11 +114,13 @@ class Config(BaseModel):
         )
 
     def validate(self) -> None:
-        # check digest dependencies
-        if self.telegram.enabled and not self.digest.enabled:
-            raise ValueError('Telegram requires digest.enabled to be true')
-        if self.x.enabled and not self.digest.enabled:
-            raise ValueError('X requires digest.enabled to be true')
+        # check task dependencies
+        if self.images.enabled and not self.digest.enabled:
+            raise ValueError('Images requires digest.enabled to be true')
+        if self.telegram.enabled and not self.images.enabled:
+            raise ValueError('Telegram requires images.enabled to be true')
+        if self.x.enabled and not self.images.enabled:
+            raise ValueError('X requires images.enabled to be true')
 
     def log(self, logger: Logger) -> None:
         def log_enabled(name: str, enabled: bool) -> None:
@@ -123,6 +130,9 @@ class Config(BaseModel):
         log_enabled("Digest", self.digest.enabled)
         if self.digest.enabled:
             logger.info(f"Digest model: {self.digest.model}")
+
+        # log images config
+        log_enabled("Images", self.images.enabled)
 
         # log oss config
         log_enabled("OSS", self.oss.enabled)

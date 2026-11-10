@@ -10,7 +10,16 @@ from src.status import Status
 
 
 class DailyTaskTests(unittest.TestCase):
-    def run_pipeline(self, *, digest=True, failure=None, block_digest=False):
+    def run_pipeline(
+        self,
+        *,
+        digest=True,
+        images=True,
+        x=True,
+        telegram=True,
+        failure=None,
+        block_digest=False,
+    ):
         events = []
 
         class Daily:
@@ -49,8 +58,9 @@ class DailyTaskTests(unittest.TestCase):
         config = Config.model_validate(
             {
                 'digest': {'enabled': digest},
-                'x': {'enabled': digest},
-                'telegram': {'enabled': digest},
+                'images': {'enabled': digest and images},
+                'x': {'enabled': digest and x},
+                'telegram': {'enabled': digest and telegram},
                 'oss': {'enabled': True},
                 'email': {'enabled': True},
             }
@@ -64,6 +74,7 @@ class DailyTaskTests(unittest.TestCase):
                 logger=MagicMock(),
                 TodayPeopleDaily=Daily,
                 generate_digest=action('digest'),
+                generate_images=action('images'),
                 upload_to_oss=action('oss'),
                 send_email=action('email'),
                 send_telegram=action('telegram'),
@@ -82,26 +93,21 @@ class DailyTaskTests(unittest.TestCase):
         events = self.run_pipeline(block_digest=True)
         self.assertCountEqual(
             events,
-            [
-                'oss',
-                'email',
-                'digest',
-                'telegram',
-                'x',
-                'save',
-            ],
+            ['oss', 'email', 'digest', 'images', 'telegram', 'x', 'save'],
         )
         self.assertEqual(events[-1], 'save')
         for before, after in (
             ('oss', 'email'),
-            ('digest', 'telegram'),
-            ('digest', 'x'),
+            ('digest', 'images'),
+            ('images', 'telegram'),
+            ('images', 'x'),
         ):
             self.assertLess(events.index(before), events.index(after))
 
     def test_failures_are_propagated_after_saving_completed_work(self):
         for name in (
             'digest',
+            'images',
             'oss',
             'email',
             'telegram',
@@ -112,7 +118,7 @@ class DailyTaskTests(unittest.TestCase):
                 events = self.run_pipeline(failure=name)
                 self.assertEqual(events[-1], 'save')
                 self.assertEqual(events.count('save'), 1)
-                if name == 'digest':
+                if name in ('digest', 'images'):
                     self.assertNotIn('x', events)
                     self.assertNotIn('telegram', events)
                 if name == 'oss':
@@ -125,3 +131,22 @@ class DailyTaskTests(unittest.TestCase):
         self.assertCountEqual(
             self.run_pipeline(digest=False), ['oss', 'email', 'save']
         )
+
+    def test_telegram_only_generates_images_without_x(self):
+        events = self.run_pipeline(x=False)
+        self.assertIn('images', events)
+        self.assertNotIn('x', events)
+        self.assertLess(events.index('digest'), events.index('images'))
+        self.assertLess(events.index('images'), events.index('telegram'))
+
+    def test_images_generated_without_publishing_channels(self):
+        events = self.run_pipeline(x=False, telegram=False)
+        self.assertIn('digest', events)
+        self.assertIn('images', events)
+        self.assertNotIn('x', events)
+        self.assertNotIn('telegram', events)
+
+    def test_images_disabled_without_disabling_digest(self):
+        events = self.run_pipeline(images=False, x=False, telegram=False)
+        self.assertIn('digest', events)
+        self.assertNotIn('images', events)

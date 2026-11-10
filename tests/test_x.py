@@ -1,4 +1,3 @@
-import copy
 import json
 import tempfile
 import time
@@ -8,31 +7,15 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import requests
-from PIL import Image, ImageChops
-from pydantic import ValidationError
+from PIL import Image
 
 from src.config import Config
-from src.data import Data, DigestDataSection, XDataSection
-from src.send_x import (
-    XAPIError,
-    XCards,
-    XClient,
-    XDigest,
-    XDraw,
-    XMetric,
-    _create_x_images,
-    build_post,
-    generate_x_digest,
-    send_x,
-    validate_metric,
-    validate_sources,
-    verify_emphasis,
-    weighted_length,
-)
+from src.data import Data
+from src.send_x import XAPIError, XClient, build_post, send_x, weighted_length
 from src.status import Status
 
 VALID = {
-    'post': '今日关注政策与国际合作的新进展。',
+    'intro': '今日关注政策与国际合作的新进展。',
     'highlights': [
         {
             'source_id': 1,
@@ -44,15 +27,6 @@ VALID = {
 }
 
 
-def commentary(emphasis=None, source_id=1, body='评论认为要打通改革堵点。'):
-    return {
-        'source_id': source_id,
-        'title': '改革激发活力',
-        'body': body,
-        'emphasis': emphasis,
-    }
-
-
 def response(status, data):
     result = requests.Response()
     result.status_code = status
@@ -60,243 +34,16 @@ def response(status, data):
     return result
 
 
-class XGenerationTests(unittest.TestCase):
-    def test_numbers_and_chinese_have_the_same_visual_center(self):
-        daily = SimpleNamespace(data=Data(date='2026-11-07'), pages=[])
-        font = XCards(daily, 2).font(40)
-        image = Image.new('RGB', (500, 200), 'white')
-        draw = XDraw(image)
-        draw.text((10, 10), '国123', font=font, fill='black')
-        boundary = 20 + round(font.font_variant(size=80).getlength('国'))
-        mask = ImageChops.invert(image.convert('L'))
-        chinese = mask.crop((20, 0, boundary, 200)).getbbox()
-        digits = mask.crop((boundary, 0, 500, 200)).getbbox()
-        self.assertIsNotNone(chinese)
-        self.assertIsNotNone(digits)
-        self.assertLessEqual(
-            abs((chinese[1] + chinese[3]) / 2 - (digits[1] + digits[3]) / 2), 1
-        )
-
-    def test_limits_and_link_free_copy(self):
-        for value in ('字' * 101, '访问 example.com', '第一行\n第二行'):
-            payload = copy.deepcopy(VALID)
-            payload['post'] = value
-            with self.assertRaises(ValidationError):
-                XDigest.model_validate(payload)
-        payload = copy.deepcopy(VALID)
-        payload['highlights'][0]['body'] = '字' * 81
-        with self.assertRaises(ValidationError):
-            XDigest.model_validate(payload)
-        self.assertEqual(weighted_length('中文abc'), 7)
-        post = build_post('2026-11-07', 8, XDigest.model_validate(VALID))
+class XCopyTests(unittest.TestCase):
+    def test_post_format_and_weighted_limit(self):
+        post = build_post('2026-11-07', 8, VALID['intro'])
         self.assertEqual(
             post,
             '人民日报今日速读\n2026年11月07日 星期六｜今日8版\n\n'
-            + VALID['post']
+            + VALID['intro'],
         )
+        self.assertEqual(weighted_length('中文abc'), 7)
         self.assertLessEqual(weighted_length(post), 280)
-
-    def test_source_ids_are_unique_and_present(self):
-        original = DigestDataSection.model_validate(
-            {'highlights': [{}], 'commentary': [{}]}
-        )
-        payload = copy.deepcopy(VALID)
-        payload['commentary'] = [commentary(), commentary()]
-        with self.assertRaises(ValueError):
-            validate_sources(XDigest.model_validate(payload), original)
-        payload['commentary'] = [commentary(source_id=2)]
-        with self.assertRaises(ValueError):
-            validate_sources(XDigest.model_validate(payload), original)
-        payload['commentary'] = []
-        payload['highlights'] *= 2
-        with self.assertRaises(ValueError):
-            validate_sources(XDigest.model_validate(payload), original)
-
-    def test_saved_digest_is_reused_and_post_is_saved(self):
-        daily = SimpleNamespace(
-            data=Data(
-                date='2026-11-07',
-                page_count=8,
-                digest={'highlights': [{}], 'commentary': []},
-                x=XDataSection(),
-            ),
-            logger=MagicMock(),
-        )
-        original = copy.deepcopy(daily.data.digest)
-        config = Config.model_validate(
-            {'digest': {'api_key': 'test', 'model': 'test'}}
-        )
-        with (
-            patch('src.send_x.OpenAI') as client,
-            patch('src.send_x.commentary_context', return_value={}),
-        ):
-            api = client.return_value.__enter__.return_value
-            response = api.chat.completions.create.return_value
-            response.choices = [
-                SimpleNamespace(
-                    message=SimpleNamespace(content=json.dumps(VALID))
-                )
-            ]
-            response.usage = None
-            one = generate_x_digest(config, daily)
-            self.assertEqual(one, generate_x_digest(config, daily))
-            self.assertEqual(client.call_count, 1)
-        self.assertEqual(daily.data.x.digest, VALID)
-        self.assertEqual(
-            daily.data.x.post,
-            build_post(daily.data.date, daily.data.page_count, one),
-        )
-        self.assertEqual(original, daily.data.digest)
-
-    def test_two_commentaries_need_concise_copy(self):
-        payload = copy.deepcopy(VALID)
-        payload['commentary'] = [
-            commentary(body='字' * 71),
-            commentary(source_id=2),
-        ]
-        with self.assertRaises(ValidationError):
-            XDigest.model_validate(payload)
-        payload['commentary'] = [
-            commentary(),
-            commentary(source_id=2),
-            commentary(source_id=3),
-        ]
-        with self.assertRaises(ValidationError):
-            XDigest.model_validate(payload)
-        payload['commentary'] = [
-            commentary({'kind': 'claim', 'text': '字' * 31}),
-            commentary(source_id=2),
-        ]
-        with self.assertRaises(ValidationError):
-            XDigest.model_validate(payload)
-
-    def test_quote_and_data_verification_is_source_specific(self):
-        metric = XMetric(
-            value='4,142', label='参展企业', source_quote='4142家境外企业参展'
-        )
-        validate_metric(metric, '本届共有4142家境外企业参展。')
-        with self.assertRaises(ValueError):
-            validate_metric(metric, '其他来源')
-        metric.value = '414'
-        with self.assertRaises(ValueError):
-            validate_metric(metric, '4142家境外企业参展')
-        payload = copy.deepcopy(VALID)
-        payload['commentary'] = [
-            commentary({'kind': 'quote', 'text': '以改革打通堵点'}),
-            commentary(
-                {'kind': 'data', 'metrics': [metric.model_dump()]}, source_id=2
-            ),
-        ]
-        result = XDigest.model_validate(payload)
-        verify_emphasis(
-            result,
-            {1: '文章认为应以改革打通堵点。', 2: '4142家境外企业参展'},
-            MagicMock(),
-        )
-        self.assertIsNotNone(result.commentary[0].emphasis)
-        self.assertIsNone(result.commentary[1].emphasis)
-        verify_emphasis(result, {2: '以改革打通堵点'}, MagicMock())
-        self.assertIsNone(result.commentary[0].emphasis)
-
-    def test_all_emphasis_layouts_single_and_double(self):
-        options = [
-            None,
-            {'kind': 'claim', 'text': '字' * 30},
-            {'kind': 'quote', 'text': '字' * 30},
-            {
-                'kind': 'data',
-                'metrics': [
-                    {
-                        'value': '超过1234万元',
-                        'label': '字' * 14,
-                        'source_quote': '原文',
-                    }
-                ],
-            },
-        ]
-        sources = [{'url': 'source'}]
-        daily = SimpleNamespace(
-            data=Data(
-                date='2026-11-07',
-                page_count=8,
-                digest={
-                    'highlights': [{'sources': sources}] * 3,
-                    'commentary': [
-                        {'title': '原文（人民时评）', 'url': 'source'}
-                    ]
-                    * 2,
-                },
-            ),
-            pages=[
-                SimpleNamespace(
-                    articles=[SimpleNamespace(url='source')], page='01'
-                )
-            ],
-        )
-        cards = XCards(daily, 3)
-        with tempfile.TemporaryDirectory() as directory:
-            for count in (1, 2):
-                for emphasis in options:
-                    payload = copy.deepcopy(VALID)
-                    payload['commentary'] = [
-                        commentary(
-                            emphasis, i + 1, '字' * (100 if count == 1 else 70)
-                        )
-                        for i in range(count)
-                    ]
-                    for item in payload['commentary']:
-                        item['title'] = '字' * 20
-                    cards.commentary(
-                        XDigest.model_validate(payload),
-                        Path(directory) / 'commentary.png',
-                    )
-            digest = XDigest.model_validate(VALID)
-            digest.highlights[0].body = '字' * 80
-            cards.highlights(digest, Path(directory) / 'highlights.png')
-        self.assertEqual(XCards.column_tag('观点（和音）'), '和音')
-        self.assertEqual(XCards.column_tag('普通标题'), '')
-
-    def test_rendered_images_and_saved_post_match_digest(self):
-        import pymupdf
-
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory)
-            pdf_path = path / 'issue.pdf'
-            with pymupdf.open() as pdf:
-                page = pdf.new_page(width=600, height=900)
-                page.draw_rect(page.rect, color=(1, 0, 0), fill=(1, 0, 0))
-                pdf.save(pdf_path)
-            daily = SimpleNamespace(
-                data=Data(date='2026-11-07', page_count=8),
-                merged_pdf_path=str(pdf_path),
-                pages=[],
-            )
-            cards = XCards(daily, 3)
-            cards.frontpage(path / 'card.png')
-            with Image.open(path / 'card.png') as image:
-                self.assertEqual(image.size, (2400, 3200))
-                r, g, b = image.getpixel((1200, 1600))
-                self.assertGreater(r, 240)
-                self.assertLess(g, 10)
-                self.assertLess(b, 10)
-            daily.dir_path = str(path)
-            daily.logger = MagicMock()
-            daily.data.digest = DigestDataSection.model_validate(
-                {'highlights': [{'sources': []}], 'commentary': []}
-            )
-            daily.data.x = XDataSection(digest=copy.deepcopy(VALID))
-            output = _create_x_images(Config(), daily)
-            self.assertEqual(
-                {file.name for file in output},
-                {'01-frontpage.png', '02-highlights.png'},
-            )
-            self.assertEqual(
-                daily.data.x.post,
-                build_post(
-                    daily.data.date, daily.data.page_count,
-                    XDigest.model_validate(VALID),
-                ),
-            )
 
 
 class XPublishTests(unittest.TestCase):
@@ -305,17 +52,8 @@ class XPublishTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
         self.issue = self.root / '2026/11/07'
-        self.images_dir = self.issue / 'x'
+        self.images_dir = self.issue / 'images'
         self.images_dir.mkdir(parents=True)
-        render = patch(
-            'src.send_x._create_x_images',
-            return_value=[
-                self.images_dir / '01-frontpage.png',
-                self.images_dir / '02-highlights.png',
-            ],
-        )
-        self.render = render.start()
-        self.addCleanup(render.stop)
         self.config = Config.model_validate(
             {
                 'x': {
@@ -341,13 +79,10 @@ class XPublishTests(unittest.TestCase):
             data=Data(
                 date='2026-11-07',
                 page_count=8,
-                x=XDataSection(
-                    digest=VALID,
-                    post=build_post(
-                        '2026-11-07', 8, XDigest.model_validate(VALID)
-                    ),
-                ),
+                images=VALID,
             ),
+            image_paths=[self.images_dir / '01-frontpage.png',
+                         self.images_dir / '02-highlights.png'],
             dir_path=str(self.issue),
             status=Status(),
             logger=MagicMock(),
@@ -368,9 +103,11 @@ class XPublishTests(unittest.TestCase):
 
             def publish(text, media_ids):
                 self.assertEqual(media_ids, ['101', '102'])
-                self.assertTrue(text.startswith(
-                    '人民日报今日速读\n2026年11月07日 星期六｜今日8版\n\n'
-                ))
+                self.assertTrue(
+                    text.startswith(
+                        '人民日报今日速读\n2026年11月07日 星期六｜今日8版\n\n'
+                    )
+                )
                 return '12345'
 
             client.publish.side_effect = publish
@@ -380,7 +117,6 @@ class XPublishTests(unittest.TestCase):
             self.assertEqual(
                 send_x(self.config, self.daily), 'https://x.com/i/status/12345'
             )
-            self.render.assert_called_once_with(self.config, self.daily)
             self.assertEqual(client.publish.call_count, 1)
             self.assertEqual(client.upload_image.call_count, 2)
         self.assertEqual(self.daily.status.x_post_id, '12345')
