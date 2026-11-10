@@ -1,7 +1,9 @@
 import asyncio
 import datetime
 import time
+from pathlib import Path
 
+from telegram import InputMediaPhoto
 from telegram.constants import ParseMode
 from telegram.ext import Application
 from telegram.helpers import escape_markdown
@@ -124,21 +126,13 @@ def build_digest_message(daily: TodayPeopleDaily) -> str:
     if commentary:
         sections.append(("*评论风向*", commentary))
 
-    # append blocks until message length limit
-    text = header
+    # include every digest block; split into replies when sending
+    blocks = [header]
     for title, items in sections:
-        candidate = f"{text}\n\n{title}"
-        added = False
-        for item in items:
-            if len(candidate) + len(item) + 2 > MAX_MESSAGE_LEN:
-                break
-            candidate += f"\n\n{item}"
-            added = True
-        if not added:
-            break
-        text = candidate
-
-    return text
+        if items:
+            blocks.append(title)
+            blocks.extend(items)
+    return "\n\n".join(blocks)
 
 
 async def wait_for_forward(
@@ -175,7 +169,8 @@ async def wait_for_forward(
 
 
 async def send_messages(
-        digest_text: str,
+        caption: str,
+        images: list[Path],
         chunks: list[str],
         token: str,
         channel_id: int,
@@ -183,20 +178,25 @@ async def send_messages(
 ) -> None:
     app = Application.builder().token(token).build()
     async with app:
-        # send digest to channel
-        channel_msg = await app.bot.send_message(
-            chat_id=channel_id,
-            text=digest_text,
-            parse_mode=ParseMode.MARKDOWN_V2,
-            disable_web_page_preview=True
+        # send one album with a short introduction to channel
+        media = [
+            InputMediaPhoto(
+                path.read_bytes(), filename=path.name,
+                caption=caption if index == 0 else None,
+                parse_mode=ParseMode.MARKDOWN_V2 if index == 0 else None
+            )
+            for index, path in enumerate(images)
+        ]
+        messages = await app.bot.send_media_group(
+            chat_id=channel_id, media=media
         )
 
         # wait for auto-forward to discussion group
         forward_id = await wait_for_forward(
-            app, discussion_chat_id, channel_msg.message_id
+            app, discussion_chat_id, messages[0].message_id
         )
 
-        # send full toc as replies to the digest
+        # send full digest and toc as replies to the album
         for chunk in chunks:
             await app.bot.send_message(
                 chat_id=discussion_chat_id,
@@ -218,11 +218,16 @@ def send_telegram(
         )
         return
 
-    # build and send digest with toc replies
-    digest_text = build_digest_message(today_peoples_daily)
-    chunks = build_messages(today_peoples_daily)
+    # build album caption and full digest with toc replies
+    caption = (
+        f"{build_header(today_peoples_daily)}\n\n"
+        f"{esc(today_peoples_daily.data.images.intro)}"
+    )
+    chunks = split_message(build_digest_message(today_peoples_daily))
+    chunks.extend(build_messages(today_peoples_daily))
     asyncio.run(send_messages(
-        digest_text, chunks, config.telegram.bot_token,
+        caption, today_peoples_daily.image_paths, chunks,
+        config.telegram.bot_token,
         config.telegram.channel_id, config.telegram.discussion_chat_id
     ))
 
