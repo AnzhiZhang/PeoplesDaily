@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.7.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.7.0...v2.7.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* clarify image digest response constraints ([b6b1a63](https://github.com/AnzhiZhang/PeoplesDaily/commit/b6b1a63f8b86c51403f9d73e38cfa6f1a3b36e8a))
+* preserve all digest items in generated images ([96cf494](https://github.com/AnzhiZhang/PeoplesDaily/commit/96cf4949656da93bee4bbd27de7dac72558cad40))
+* relax image commentary length validation ([6efe91b](https://github.com/AnzhiZhang/PeoplesDaily/commit/6efe91bc9007349a706e9cb00a78405d7f2ce41e))
+
 ## [2.7.0](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.6.0...v2.7.0) (2026-11-10)
 
 
