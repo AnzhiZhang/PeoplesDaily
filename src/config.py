@@ -80,11 +80,13 @@ class Config(BaseModel):
         # load config
         data = yaml.safe_load(path.read_text('utf-8')) or {}
         config = cls.model_validate(data)
-        config.validate()
 
         # write back if config file is missing any fields
         if data != config.model_dump():
             config.save(path)
+
+        # validate config
+        config.validate()
 
         # return
         return config

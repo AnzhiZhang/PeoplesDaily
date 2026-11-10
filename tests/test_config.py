@@ -85,13 +85,21 @@ class ConfigTests(unittest.TestCase):
         ):
             self.assertNotIn(secret, output)
 
-    def test_load_validates_before_overwriting_config(self):
+    def test_load_writes_missing_defaults_before_validation(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'config.yaml'
-            content = 'x:\n  enabled: true\n'
-            path.write_text(content)
+            original = {
+                'x': {'enabled': True, 'refresh_token': 'test-refresh'}
+            }
+            path.write_text(yaml.safe_dump(original))
             with self.assertRaisesRegex(
                 ValueError, 'X requires digest.enabled'
             ):
                 Config.load(path)
-            self.assertEqual(path.read_text(), content)
+            saved = yaml.safe_load(path.read_text())
+            self.assertEqual(
+                saved, Config.model_validate(original).model_dump()
+            )
+            self.assertFalse(saved['digest']['enabled'])
+            self.assertTrue(saved['x']['enabled'])
+            self.assertEqual(saved['x']['refresh_token'], 'test-refresh')
