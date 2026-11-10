@@ -228,7 +228,9 @@ class TodayPeopleDaily:
                 )
 
         # get page count
-        self.data.page_count = requests.get(self.home_url).text.count('pageLink')
+        self.data.page_count = requests.get(self.home_url).text.count(
+            'pageLink'
+        )
 
         # check page count
         if self.data.page_count == 0:
