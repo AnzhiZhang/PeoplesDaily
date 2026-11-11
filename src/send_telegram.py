@@ -95,15 +95,12 @@ def build_messages(daily: TodayPeopleDaily) -> list[str]:
     return chunks
 
 
-def build_highlight(highlight: dict) -> str:
+def build_highlight(highlight: dict, source_pages: dict[str, str]) -> str:
     # source links in parentheses after title
-    sources = highlight['sources']
-    if len(sources) == 1:
-        links = f"[原文]({sources[0]['url']})"
-    else:
-        links = " · ".join(
-            f"[原文 {n}]({s['url']})" for n, s in enumerate(sources, start=1)
-        )
+    links = "、".join(
+        f"[{source_pages[source['url']]}]({source['url']})"
+        for source in highlight['sources']
+    )
 
     blocks = [f"*{esc(highlight['title'])}* \\({links}\\)"]
     blocks.extend(esc(p) for p in highlight['paragraphs'])
@@ -117,7 +114,14 @@ def build_digest_message(daily: TodayPeopleDaily) -> str:
 
     # build sections as blocks
     sections: list[tuple[str, list[str]]] = []
-    highlights = [build_highlight(h) for h in digest.highlights]
+    source_pages = {
+        article.url: f'第{int(page.page):02d}版'
+        for page in daily.pages
+        for article in page.articles
+    }
+    highlights = [
+        build_highlight(h, source_pages) for h in digest.highlights
+    ]
     sections.append(("*今日要点*", highlights))
     commentary = [
         f"*[{esc(c['title'])}]({c['url']})*\n{esc(c['point'])}"

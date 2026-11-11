@@ -38,6 +38,7 @@ def make_daily():
         home_url='https://paper.test/page',
         pages=[
             SimpleNamespace(
+                page='01',
                 title='第一版',
                 html_url='https://paper.test/page',
                 articles=[
@@ -71,6 +72,22 @@ class TelegramTests(unittest.TestCase):
         self.assertNotIn('今日目录', toc)
         self.assertIn('完整目录文章', toc)
         self.assertNotIn('摘要正文。', toc)
+
+    def test_digest_source_links_show_page_numbers(self):
+        daily = make_daily()
+        daily.pages.append(SimpleNamespace(
+            page='03',
+            articles=[SimpleNamespace(url='https://paper.test/other')],
+        ))
+        highlight = daily.data.digest.highlights[0]
+        highlight['sources'].append({'url': 'https://paper.test/other'})
+        digest = build_digest_message(daily)
+        self.assertIn(
+            '[第01版](https://paper.test/article)、'
+            '[第03版](https://paper.test/other)',
+            digest,
+        )
+        self.assertNotIn('原文', digest)
 
     def test_long_toc_preserves_every_article(self):
         daily = make_daily()
