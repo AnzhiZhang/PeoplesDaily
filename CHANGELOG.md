@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.2](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.7.1...v2.7.2) (2026-11-11)
+
+
+### Bug Fixes
+
+* show page numbers in Telegram digest source links ([a5bb107](https://github.com/AnzhiZhang/PeoplesDaily/commit/a5bb107fcdb92463ac6271604d9ba1cbd9058931))
+
 ## [2.7.1](https://github.com/AnzhiZhang/PeoplesDaily/compare/v2.7.0...v2.7.1) (2026-11-10)
 
 
